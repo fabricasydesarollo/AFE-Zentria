@@ -25,11 +25,13 @@ PRIVADO_ODO/
 
 ## ⚡ Quick Start
 
+> **📚 Para instalación completa paso a paso, ver [INSTALACION.md](INSTALACION.md)**
+
 ### Requisitos Previos
 - Python 3.10+
 - Node.js 18+
 - MySQL 8.0+
-- Cuenta Azure AD (para OAuth)
+- Cuenta Azure AD (para OAuth - opcional)
 
 ### 1️⃣ Base de Datos
 
@@ -37,6 +39,9 @@ PRIVADO_ODO/
 # Crear base de datos
 mysql -u root -p
 CREATE DATABASE afe_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'afe_user'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON afe_db.* TO 'afe_user'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
 ### 2️⃣ Backend

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Rechazada</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #ffe6e6;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #dc3545;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 2px solid #dc3545;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .monto-value {
+            color: #dc3545;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .reason-box {
+            background-color: #fff5f5;
+            border-left: 4px solid #dc3545;
+            border: 1px solid #ffe6e6;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .reason-title {
+            font-weight: bold;
+            color: #721c24;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+        .reason-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            color: #333;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .next-actions {
+            background-color: #e7f3ff;
+            border: 1px solid #b8daff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .next-actions-title {
+            font-weight: bold;
+            color: #004085;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .actions-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .actions-list li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #004085;
+            line-height: 1.6;
+        }
+        .actions-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 8px;
+            color: #007bff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .contact-box {
+            background-color: #fff9e6;
+            border: 1px solid #ffc107;
+            padding: 18px;
+            margin: 25px 0;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .contact-box strong {
+            color: #856404;
+            font-size: 16px;
+        }
+        .contact-box p {
+            margin: 10px 0 0 0;
+            color: #856404;
+        }
+        .note-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+            color: #495057;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                margin: -20px -20px 20px -20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❌ Factura Rechazada</h1>
+            <div class="status-badge">RECHAZADA</div>
+        </div>
+
+        <p class="greeting">Estimado/a <strong>{{ nombre_responsable }}</strong>,</p>
+
+        <p>Le informamos que la siguiente factura ha sido <strong>rechazada</strong> y requiere acciones correctivas antes de poder ser procesada:</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label"> Número de Factura</span>
+                <span class="info-value">{{ numero_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ nombre_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🔢 NIT</span>
+                <span class="info-value">{{ nit_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="monto-value">{{ monto_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Rechazo</span>
+                <span class="info-value">{{ fecha_rechazo }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">👤 Rechazado por</span>
+                <span class="info-value">{{ rechazado_por }}</span>
+            </div>
+        </div>
+
+        <div class="reason-box">
+            <div class="reason-title">
+                ⚠️ Motivo del Rechazo
+            </div>
+            <div class="reason-content">
+                {{ motivo_rechazo }}
+            </div>
+        </div>
+
+        {# Mostrar observaciones si existen #}
+        {% if observaciones %}
+        <div style="background-color: #fff5f5; border-left: 4px solid #dc3545; border: 1px solid #ffe6e6; padding: 20px; margin: 25px 0; border-radius: 6px;">
+            <div style="font-weight: bold; color: #721c24; margin-bottom: 12px; font-size: 16px;">
+                📝 Observaciones Adicionales
+            </div>
+            <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #f5c6cb; color: #333; line-height: 1.8; font-size: 15px;">
+                {{ observaciones }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="next-actions">
+            <div class="next-actions-title">
+                 Acciones Correctivas Recomendadas
+            </div>
+            <ul class="actions-list">
+                <li>Revise la información detallada del motivo de rechazo</li>
+                <li>Corrija los errores o inconsistencias identificadas</li>
+                <li>Coordine con el proveedor si es necesario obtener documentación adicional</li>
+                <li>Presente una nueva factura corregida cuando corresponda</li>
+                <li>Si tiene dudas, contacte al responsable que rechazó la factura</li>
+            </ul>
+        </div>
+
+        <div class="contact-box">
+            <strong>💬 ¿Necesita Aclaraciones?</strong>
+            <p>
+                Si requiere más detalles sobre el rechazo o necesita orientación, por favor contacte a <strong>{{ rechazado_por }}</strong> o al área de contabilidad.
+            </p>
+        </div>
+
+        <div class="note-box">
+            <strong>Nota:</strong> Esta factura no será procesada para pago hasta que se corrijan los problemas identificados y se presente una nueva versión aprobada.
+        </div>
+
+        {# Botón para ir a la factura en el dashboard #}
+        {% if url_factura %}
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url_factura }}" style="display: inline-block; padding: 14px 36px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; border: 2px solid #dc3545;">
+                📋 Ver Detalles en el Dashboard
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #adb5bd; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte técnico, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

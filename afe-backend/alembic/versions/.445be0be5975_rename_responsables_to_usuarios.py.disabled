@@ -1,0 +1,60 @@
+"""rename_responsables_to_usuarios
+
+Revision ID: 445be0be5975
+Revises: 445be0be5974
+Create Date: 2025-11-26 10:00:00.000000
+
+Renombra tabla responsables a usuarios para reflejar que son usuarios del sistema.
+RAZÓN DEL CAMBIO:
+- La tabla almacena usuarios del sistema con roles RBAC
+- El nombre responsables es ambiguo (¿responsables de qué?)
+- El nuevo nombre usuarios es semanticamente correcto y estándar en industria
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = '445be0be5975'
+down_revision: Union[str, Sequence[str], None] = '445be0be5974'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Renombra tabla responsables a usuarios."""
+    from sqlalchemy import inspect
+
+    bind = op.get_bind()
+    inspector = inspect(bind)
+
+    # Verificar si ya existe la tabla usuarios
+    if 'usuarios' in inspector.get_table_names():
+        print("Tabla usuarios ya existe, saltando renombrado")
+        return
+
+    if 'responsables' not in inspector.get_table_names():
+        print("Tabla responsables no existe, saltando renombrado")
+        return
+
+    # Renombrar tabla
+    op.rename_table('responsables', 'usuarios')
+    print("Tabla responsables renombrada a usuarios exitosamente")
+
+
+def downgrade() -> None:
+    """Revierte el renombrado de usuarios a responsables."""
+    from sqlalchemy import inspect
+
+    bind = op.get_bind()
+    inspector = inspect(bind)
+
+    if 'usuarios' not in inspector.get_table_names():
+        print("Tabla usuarios no existe, saltando downgrade")
+        return
+
+    # Renombrar tabla de vuelta
+    op.rename_table('usuarios', 'responsables')
+    print("Tabla usuarios renombrada a responsables exitosamente")

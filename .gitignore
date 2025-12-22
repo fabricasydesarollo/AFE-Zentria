@@ -1,0 +1,237 @@
+# ================================================================
+# GITIGNORE PRINCIPAL - PRIVADO_ODO
+# ================================================================
+
+# ================================================================
+# ARCHIVOS SENSIBLES (NUNCA VERSIONAR)
+# ================================================================
+*.env
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Credenciales y secretos
+**/credentials.json
+**/secrets.json
+**/*secret*
+**/*password*
+
+# ================================================================
+# BASE DE DATOS Y BACKUPS
+# ================================================================
+# Backups SQL (NUNCA versionar datos reales)
+*.sql
+!**/alembic/versions/*.sql
+!**/migrations/*.sql
+
+# Archivos de base de datos
+*.sqlite
+*.sqlite3
+*.db
+db_data/
+
+# EXCEPCIÓN: Schema de referencia (sin datos)
+!BD/schema_reference.sql
+
+# ================================================================
+# PYTHON
+# ================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+
+# ================================================================
+# NODE.JS / FRONTEND
+# ================================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Dependency directories
+.pnp
+.pnp.js
+
+# ================================================================
+# LOGS
+# ================================================================
+*.log
+logs/
+*.log.*
+log_*.txt
+
+# ================================================================
+# SISTEMA OPERATIVO
+# ================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ================================================================
+# ARCHIVOS TEMPORALES Y CACHE
+# ================================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+_temp/
+_cache/
+
+# ================================================================
+# DOCUMENTACIÓN TEMPORAL (en raíz de submódulos)
+# ================================================================
+# Permitir documentación en carpeta docs/ pero no en raíz de submódulos
+**/FASE_*.md
+**/IMPLEMENTACION_*.md
+**/RESUMEN_*.md
+**/DIAGNOSTICO_*.md
+**/REPORTE_*.md
+**/ESTADO_*.md
+**/ANALISIS_*.md
+**/AUDITORIA_*.md
+**/PLAN_*.md
+**/SOLUCION_*.md
+**/SESION_*.md
+**/BACKUP_*.md
+
+# EXCEPCIONES: Documentación esencial
+!README.md
+!**/README.md
+!DOCUMENTACION_TECNICA.md
+!docs/**/*.md
+!DOCUMENTACION_TECNICA/**/*.md
+
+# ================================================================
+# SCRIPTS TEMPORALES Y DE DEBUG
+# ================================================================
+# Scripts de debug en raíz de submódulos
+**/check_*.py
+**/fix_*.py
+**/test_*.py
+**/debug_*.py
+**/temp_*.py
+**/diagnostico_*.py
+**/verificar_*.py
+**/analizar_*.py
+**/corregir_*.py
+**/sincronizar_*.py
+**/actualizar_*.py
+**/reparar_*.py
+**/buscar_*.py
+**/configurar_*.py
+**/consultar_*.py
+
+# EXCEPCIONES: Tests legítimos
+!**/tests/**
+!**/test_*.py
+!**/__tests__/**
+
+# Archivos batch y shell temporales
+**/*.bat
+**/*.sh
+!**/scripts/**/*.sh
+!**/scripts/**/*.bat
+
+# ================================================================
+# BACKUPS Y ARCHIVOS ANTIGUOS
+# ================================================================
+*.backup
+*.bak
+*.old
+*_backup/
+*_old/
+*_archive/
+backup_*/
+*_deprecated/
+
+# ================================================================
+# DATOS Y ARCHIVOS GRANDES
+# ================================================================
+# PDFs grandes (excepto documentación esencial)
+*.pdf
+!docs/**/*.pdf
+!DOCUMENTACION_TECNICA/**/*.pdf
+
+# Archivos de datos
+*.csv
+*.xlsx
+*.xls
+!**/templates/*.xlsx
+!**/examples/*.csv
+
+# Imágenes grandes
+*.psd
+*.ai
+
+# ================================================================
+# ESPECÍFICO DEL PROYECTO AFE
+# ================================================================
+# Cache de facturas procesadas
+**/facturas_cache/
+**/xml_cache/
+**/pdf_cache/
+
+# Archivos de configuración local específicos
+**/local_config.json
+**/desarrollo_local.json
+
+# Carpetas de testing local
+**/test_data/
+**/sample_data/
+
+# ================================================================
+# GIT
+# ================================================================
+*.orig
+*.rej

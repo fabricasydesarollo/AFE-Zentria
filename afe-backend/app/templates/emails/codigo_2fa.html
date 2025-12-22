@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de Verificación 2FA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 24px;
+        }
+        .code-box {
+            background-color: #667eea;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .code {
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .code-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .warning-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .security-tip {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .expiry {
+            text-align: center;
+            color: #666;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Código de Verificación</h1>
+        </div>
+
+        <p>Hola <strong>{nombre_usuario}</strong>,</p>
+
+        <p>Has solicitado acceder al Sistema AFE. Para completar tu inicio de sesión, utiliza el siguiente código de verificación:</p>
+
+        <div class="code-box">
+            <div class="code-label">TU CÓDIGO DE VERIFICACIÓN</div>
+            <div class="code">{codigo_2fa}</div>
+            <div class="expiry"> Válido por {minutos_validez} minutos</div>
+        </div>
+
+        <div class="warning">
+            <span class="warning-icon"></span>
+            <strong>Importante:</strong> Este código es de un solo uso y expirará en {minutos_validez} minutos.
+        </div>
+
+        <div class="security-tip">
+            <strong> Consejos de seguridad:</strong>
+            <ul style="margin: 10px 0 0 0;">
+                <li>Nunca compartas este código con nadie</li>
+                <li>Nuestro equipo nunca te pedirá este código por teléfono o email</li>
+                <li>Si no solicitaste este código, ignora este mensaje y cambia tu contraseña</li>
+            </ul>
+        </div>
+
+        <p style="margin-top: 20px; color: #666;">
+            Si no intentaste iniciar sesión, por favor contacta al administrador del sistema de inmediato.
+        </p>
+
+        <div class="footer">
+            <p>Este es un correo automático del Sistema AFE - Gestión de Facturas</p>
+            <p>Por favor no responda a este mensaje</p>
+            <p>Fecha y hora: {fecha_hora}</p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+        </div>
+    </div>
+</body>
+</html>

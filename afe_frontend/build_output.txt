@@ -1,0 +1,32 @@
+
+> afe-frontend@0.0.0 build
+> tsc -b && vite build
+
+src/features/dashboard/DashboardPage.tsx(373,13): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(props: { href: string; } & ButtonOwnProps & Omit<ButtonBaseOwnProps, "classes"> & CommonProps & Omit<DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>, "disabled" | ... 27 more ... | "size">): Element', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+  Overload 2 of 3, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ButtonOwnProps & Omit<ButtonBaseOwnProps, "classes"> & CommonProps & Omit<...>): Element | null', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+  Overload 3 of 3, '(props: DefaultComponentProps<ExtendButtonBaseTypeMap<ButtonTypeMap<{}, "button">>>): Element | null', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+src/features/dashboard/DashboardPage.tsx(472,15): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(props: { href: string; } & ButtonOwnProps & Omit<ButtonBaseOwnProps, "classes"> & CommonProps & Omit<DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>, "disabled" | ... 27 more ... | "size">): Element', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+  Overload 2 of 3, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ButtonOwnProps & Omit<ButtonBaseOwnProps, "classes"> & CommonProps & Omit<...>): Element | null', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+  Overload 3 of 3, '(props: DefaultComponentProps<ExtendButtonBaseTypeMap<ButtonTypeMap<{}, "button">>>): Element | null', gave the following error.
+    Type '{ xs: true; sm: false; }' is not assignable to type 'boolean | undefined'.
+src/features/dashboard/DashboardPage.tsx(565,11): error TS2322: Type '{ factura: { id: number; numero_factura: string; cufe: string; fecha_emision: string; fecha_vencimiento: string | undefined; proveedor: { nit: string; razon_social: string; }; proveedor_nombre: string; ... 6 more ...; observaciones: string | undefined; }; } | null' is not assignable to type 'Workflow | null'.
+  Type '{ factura: { id: number; numero_factura: string; cufe: string; fecha_emision: string; fecha_vencimiento: string | undefined; proveedor: { nit: string; razon_social: string; }; proveedor_nombre: string; ... 6 more ...; observaciones: string | undefined; }; }' is missing the following properties from type 'Workflow': id, factura_id, estado, responsable_id, es_identica_mes_anterior
+src/features/email-config/components/AddNitDialog.tsx(12,31): error TS2305: Module '"react-hook-form"' has no exported member 'watch'.
+src/features/email-config/components/AddNitDialog.tsx(169,19): error TS2322: Type 'boolean | "" | null' is not assignable to type 'boolean | undefined'.
+  Type 'null' is not assignable to type 'boolean | undefined'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(78,43): error TS2339: Property 'max_correos_por_ejecucion' does not exist on type 'CuentaCorreoDetalle'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(79,38): error TS2339: Property 'ventana_inicial_dias' does not exist on type 'CuentaCorreoDetalle'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(101,51): error TS2339: Property 'max_correos_por_ejecucion' does not exist on type 'CuentaCorreoDetalle'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(104,46): error TS2339: Property 'ventana_inicial_dias' does not exist on type 'CuentaCorreoDetalle'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(129,13): error TS2353: Object literal may only specify known properties, and 'actualizada_por' does not exist in type '{ nombre_descriptivo?: string | undefined; fetch_limit?: number | undefined; fetch_days?: number | undefined; activa?: boolean | undefined; organizacion?: string | undefined; }'.
+src/features/facturas/FacturasPendientesPage.tsx(903,9): error TS2322: Type '{ id: number; factura_id: number; factura: ContadorFactura; estado: any; responsable_id: number; es_identica_mes_anterior: false; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; } | null' is not assignable to type 'Workflow | null'.
+  Type '{ id: number; factura_id: number; factura: ContadorFactura; estado: any; responsable_id: number; es_identica_mes_anterior: false; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; }' is not assignable to type 'Workflow'.
+    Types of property 'factura' are incompatible.
+      Type 'ContadorFactura' is missing the following properties from type 'Factura': proveedor_id, moneda

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Devuelta por Contabilidad</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ff9800;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #fff3e0;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #ff9800;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ff9800;
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .reason-box {
+            background-color: #fff8e1;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+            border: 1px solid #ffe0b2;
+        }
+        .reason-title {
+            font-weight: bold;
+            color: #e65100;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+        .reason-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ffcc80;
+            color: #333;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .info-box {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .info-box-title {
+            font-weight: bold;
+            color: #0d47a1;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .note-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+            color: #495057;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                margin: -20px -20px 20px -20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Factura Devuelta por Contabilidad</h1>
+            <div class="status-badge">NOTIFICACIÓN</div>
+        </div>
+
+        <p class="greeting">Estimado/a <strong>{{ nombre_responsable }}</strong>,</p>
+
+        <p>Le informamos que la factura <strong>{{ numero_factura }}</strong> que usted aprobó ha sido devuelta por el departamento de contabilidad durante el proceso de validación. Se han identificado observaciones que requieren atención.</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label">📄 Número de Factura</span>
+                <span class="info-value">{{ numero_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ nombre_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🔢 NIT</span>
+                <span class="info-value">{{ nit_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="info-value">{{ monto_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Devolución</span>
+                <span class="info-value">{{ fecha_devolucion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">👤 Devuelto por</span>
+                <span class="info-value">{{ devuelto_por }}</span>
+            </div>
+        </div>
+
+        <div class="reason-box">
+            <div class="reason-title">
+                📝 Motivo de la Devolución
+            </div>
+            <div class="reason-content">
+                {{ observaciones_devolucion }}
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-box-title">
+                ℹ️ Información
+            </div>
+            <p style="margin: 0; color: #0d47a1;">
+                Se ha identificado que la factura requiere ajustes o correcciones durante el proceso de validación contable.
+                Por favor, revisar las observaciones detalladas arriba y coordinar con el proveedor para que envíe una factura corregida.
+                Una vez realizada la corrección, podrá reenviar la factura para su validación nuevamente.
+            </p>
+        </div>
+
+        <!-- Botón para ver detalles en el sistema -->
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ link_sistema }}" style="display: inline-block; padding: 14px 32px; background-color: #ff9800; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; border: 2px solid #ff9800;">
+                👁️ Ver Detalles de la Factura
+            </a>
+        </div>
+
+        <div class="note-box">
+            <strong>Próximo paso:</strong> Contacte al proveedor <strong>{{ nombre_proveedor }}</strong> para informar sobre las observaciones y solicitar que proporcione la información o ajustes requeridos según se detalla arriba.
+        </div>
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #adb5bd; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte técnico, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

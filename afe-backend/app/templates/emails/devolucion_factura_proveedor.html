@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Devuelta - Información Adicional Requerida</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ff9800;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #fff3e0;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #ff9800;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ff9800;
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 2px solid #ff9800;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .monto-value {
+            color: #ff9800;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .reason-box {
+            background-color: #fff8e1;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+            border: 1px solid #ffe0b2;
+        }
+        .reason-title {
+            font-weight: bold;
+            color: #e65100;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+        .reason-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ffcc80;
+            color: #333;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .actions-box {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .actions-title {
+            font-weight: bold;
+            color: #0d47a1;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .actions-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .actions-list li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #0d47a1;
+            line-height: 1.6;
+        }
+        .actions-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 8px;
+            color: #2196f3;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .contact-box {
+            background-color: #fff9e6;
+            border: 1px solid #ffc107;
+            padding: 18px;
+            margin: 25px 0;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .contact-box strong {
+            color: #856404;
+            font-size: 16px;
+        }
+        .contact-box p {
+            margin: 10px 0 0 0;
+            color: #856404;
+        }
+        .note-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+            color: #495057;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                margin: -20px -20px 20px -20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Información Adicional Requerida</h1>
+            <div class="status-badge">DEVUELTA</div>
+        </div>
+
+        <p class="greeting">Estimado Proveedor,</p>
+
+        <p>Le informamos que la factura <strong>{{ numero_factura }}</strong> ha sido devuelta por nuestro departamento de contabilidad debido a que requiere información adicional antes de ser validada.</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label">📄 Número de Factura</span>
+                <span class="info-value">{{ numero_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ nombre_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🔢 NIT</span>
+                <span class="info-value">{{ nit_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="monto-value">{{ monto_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Devolución</span>
+                <span class="info-value">{{ fecha_devolucion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">👤 Devuelto por</span>
+                <span class="info-value">{{ devuelto_por }}</span>
+            </div>
+        </div>
+
+        <div class="reason-box">
+            <div class="reason-title">
+                📝 Información Requerida
+            </div>
+            <div class="reason-content">
+                {{ observaciones_devolucion }}
+            </div>
+        </div>
+
+        <div class="actions-box">
+            <div class="actions-title">
+                🔄 Acciones Requeridas
+            </div>
+            <ul class="actions-list">
+                <li>Revisar la información solicitada en la sección anterior</li>
+                <li>Completar o corregir los datos faltantes en su sistema de facturación</li>
+                <li>Enviar una nueva factura corregida con la información completa</li>
+                <li>Incluir en las observaciones de la nueva factura los datos solicitados</li>
+            </ul>
+        </div>
+
+        <div class="contact-box">
+            <strong>💬 ¿Necesita Aclaración?</strong>
+            <p>
+                Si tiene dudas sobre la información requerida, por favor contacte a nuestro departamento de contabilidad o al responsable de la aprobación.
+            </p>
+        </div>
+
+        <div class="note-box">
+            <strong>Nota Importante:</strong> Esta factura no será procesada hasta que se proporcione la información solicitada. Por favor envíe una nueva factura corregida a la brevedad posible.
+        </div>
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #adb5bd; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para consultas, contacte a su representante de cuenta.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+
+> afe-frontend@0.0.0 build
+> tsc -b && vite build
+
+src/features/dashboard/DashboardPage.tsx(575,11): error TS2322: Type '{ id: number; factura_id: number; estado: any; responsable_id: number; es_identica_mes_anterior: boolean; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; factura: { ...; }; } | null' is not assignable to type 'Workflow | null'.
+  Type '{ id: number; factura_id: number; estado: any; responsable_id: number; es_identica_mes_anterior: boolean; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; factura: { ...; }; }' is not assignable to type 'Workflow'.
+    The types of 'factura.proveedor' are incompatible between these types.
+      Property 'id' is missing in type '{ nit: string; razon_social: string; }' but required in type 'Proveedor'.
+src/features/email-config/components/EditCuentaConfigDialog.tsx(129,13): error TS2353: Object literal may only specify known properties, and 'actualizada_por' does not exist in type '{ nombre_descriptivo?: string | undefined; fetch_limit?: number | undefined; fetch_days?: number | undefined; activa?: boolean | undefined; organizacion?: string | undefined; }'.
+src/features/facturas/FacturasPendientesPage.tsx(905,9): error TS2322: Type '{ id: number; factura_id: number; factura: any; estado: any; responsable_id: number; es_identica_mes_anterior: false; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; } | null' is not assignable to type 'Workflow | null'.
+  Type '{ id: number; factura_id: number; factura: any; estado: any; responsable_id: number; es_identica_mes_anterior: false; porcentaje_similitud: null; diferencias_detectadas: never[]; factura_referencia: null; }' is not assignable to type 'Workflow'.
+    Types of property 'porcentaje_similitud' are incompatible.
+      Type 'null' is not assignable to type 'number | undefined'.

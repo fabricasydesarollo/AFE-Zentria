@@ -1,0 +1,145 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Database
+db_data/
+*.sqlite3
+*.db
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scripts temporales y de debug (en raíz del proyecto)
+/*_temp.py
+/*_debug.py
+/check_*.py
+/fix_*.py
+/diagnosticar_*.py
+/verificar_*.py
+/analizar_*.py
+/migrar_*.py
+/poblar_*.py
+/crear_*.py
+/asignar_*.py
+/corregir_*.py
+/eliminar_*.py
+/limpiar_*.py
+/sincronizar_*.py
+/actualizar_*.py
+/reparar_*.py
+/buscar_*.py
+/listar_*.py
+/revisar_*.py
+/investigar_*.py
+/duplicar_*.py
+/ejecutar_*.py
+/rastrear_*.py
+/distribuir_*.py
+/reenviar_*.py
+/resend_*.py
+/configurar_*.py
+/consultar_*.py
+/explicar_*.py
+
+# EXCEPCIONES: Tests legítimos y scripts de utilidad
+!tests/**
+!scripts/**
+
+# Archivos SQL temporales
+/*.sql
+!alembic/**
+
+# Archivos de texto temporal
+/*.txt
+!requirements.txt
+!README.txt
+
+# Archivos batch temporales
+/*.bat
+/*.sh
+
+# Documentación temporal (mantener solo docs esenciales en raíz)
+/FASE*.md
+/IMPLEMENTACION*.md
+/RESUMEN_*.md
+/DIAGNOSTICO*.md
+/REPORTE_*.md
+/ESTADO_*.md
+/ANALISIS_*.md
+/CARGA_*.md
+/AUDITORIA_*.md
+/ARQUITECTURA_*.md
+/PLAN_*.md
+/ACLARACION_*.md
+/SOLUCION_*.md
+/GUIA_*.md
+/FILTRO*.md
+/GRUPOS_*.md
+/ASIGNACIONES_*.md
+/PROVEEDORES_*.md
+/DASHBOARD_*.md
+/SINCRONIZACION_*.md
+/CORRECCIONES_*.md
+/CORRECCION_*.md
+/INTEGRACION_*.md
+/PROBLEMA_*.md
+/PROGRESO_*.md
+/PROPUESTA_*.md
+/REFACTORIZACION_*.md
+/RESOLUCION_*.md
+/RESPUESTA_*.md
+/EXPLICACION_*.md
+/CHECKLIST_*.md
+/REGISTROS_*.md
+/SUPERADMIN_*.md
+/MULTITENANT_*.md
+/FLUJO_*.md
+/SESION_*.md
+/NEXT_*.md
+/INDICE_*.md
+/QUICK_*.md
+/URL_*.md
+/DIAGRAMA_*.md
+/LIMPIEZA_*.md
+/SYSTEM_*.md
+/POR_QUE_*.md
+/PROVIDER_*.md
+
+# EXCEPCIONES: Documentación esencial
+!README.md
+!DOCUMENTACION_TECNICA.md
+
+# Carpetas temporales
+_to_delete/
+_backup/
+_temp/
+_old/
+
+# Archivos de datos temporales
+temp_*.json
+*.tmp

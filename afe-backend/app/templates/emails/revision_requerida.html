@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Requiere Revisión</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ecf0f1;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #d4dce6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #1f4788;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #1f4788;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 2px solid #c0392b;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f5f7fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #d4dce6;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #e0e6ed;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #1f4788;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .monto-value {
+            color: #e74c3c;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .alert-box {
+            background-color: #fadbd8;
+            border: 2px solid #e74c3c;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+        }
+        .alert-title {
+            font-weight: bold;
+            color: #c0392b;
+            font-size: 17px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .alert-content {
+            color: #a93226;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .confidence-box {
+            background-color: #fef5e7;
+            border: 1px solid #f39c12;
+            padding: 18px;
+            margin: 20px 0;
+            border-radius: 6px;
+            border-left: 4px solid #f39c12;
+        }
+        .confidence-title {
+            font-weight: bold;
+            color: #7d4f1f;
+            margin-bottom: 12px;
+            font-size: 16px;
+            display: block;
+        }
+        .confidence-percentage {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e67e22;
+            margin: 12px 0;
+        }
+        .confidence-message {
+            color: #7d4f1f;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .analysis-box {
+            background-color: #ebf5ff;
+            border: 1px solid #a8d4ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        .analysis-title {
+            font-weight: bold;
+            color: #1f4788;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: block;
+        }
+        .metric {
+            display: block;
+            padding: 10px 0;
+            border-bottom: 1px dashed #a8d4ff;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        .metric-value {
+            color: #1f4788;
+            font-weight: 600;
+            display: block;
+            margin-top: 3px;
+        }
+        .items-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .items-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        .items-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .reasons-box {
+            background-color: #fadbd8;
+            border: 1px solid #f5b7b1;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+            border-left: 4px solid #e74c3c;
+        }
+        .reasons-title {
+            font-weight: bold;
+            color: #a93226;
+            margin-bottom: 12px;
+            font-size: 16px;
+            display: block;
+        }
+        .reasons-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .reasons-list li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #922b21;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .reasons-list li::before {
+            content: "⚠";
+            position: absolute;
+            left: 0;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .action-box {
+            background-color: #d4e7f5;
+            border: 1px solid #85c1e9;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+            border-left: 4px solid #2980b9;
+        }
+        .action-title {
+            font-weight: bold;
+            color: #1f4788;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+        .action-content {
+            margin: 15px 0;
+            color: #2c3e50;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 13px 28px;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .button-primary {
+            background-color: #27ae60;
+        }
+        .button-danger {
+            background-color: #e74c3c;
+        }
+        .button-info {
+            background-color: #2980b9;
+        }
+        .single-button {
+            display: inline-block;
+        }
+        .note-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f5f7fa;
+            border-left: 3px solid #1f4788;
+            border-radius: 4px;
+            color: #2c3e50;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #d4dce6;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px !important;
+            }
+            .container {
+                padding: 20px !important;
+            }
+            .header {
+                margin: -20px -20px 20px -20px !important;
+                padding: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Factura Requiere Revisión</h1>
+            <div class="status-badge">REQUIERE ATENCIÓN INMEDIATA</div>
+        </div>
+
+        <p class="greeting">Estimado/a <strong>{{ responsable_nombre }}</strong>,</p>
+
+        <p>La siguiente factura <strong>no cumple con los criterios de aprobación automática</strong> y requiere su revisión manual inmediata:</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label"> Número de Factura</span>
+                <span class="info-value"><strong>{{ numero_factura }}</strong></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ proveedor_nombre }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="monto-value">{{ monto }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Emisión</span>
+                <span class="info-value">{{ fecha_emision }}</span>
+            </div>
+            {% if concepto %}
+            <div class="info-row">
+                <span class="info-label"> Concepto</span>
+                <span class="info-value">{{ concepto }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="alert-box">
+            <div class="alert-title">
+                ⛔ Motivo de Revisión Requerida
+            </div>
+            <div class="alert-content">
+                Esta factura presenta características que requieren verificación manual antes de ser aprobada. El sistema de análisis automático ha detectado divergencias o nuevos patrones que necesitan validación.
+            </div>
+        </div>
+
+        <div class="confidence-box">
+            <div class="confidence-title">
+                📊 Análisis de Confianza
+            </div>
+            <div class="confidence-percentage">
+                {{ confianza_pct }}%
+            </div>
+            <div class="confidence-message">
+                Nivel de confianza por debajo del umbral requerido ({{ umbral_minimo_pct|default(70) }}%) para aprobación automática
+            </div>
+        </div>
+
+        {# Análisis de Items #}
+        {% if analisis_items %}
+        <div class="analysis-box">
+            <div class="analysis-title">
+                🔍 Análisis de Ítems
+            </div>
+            {% if analisis_items.total_items is defined %}
+            <div class="metric">
+                <span class="metric-label">Total de Ítems:</span>
+                <span class="metric-value">{{ analisis_items.total_items }}</span>
+            </div>
+            {% endif %}
+            {% if analisis_items.items_sin_cambios is defined %}
+            <div class="metric">
+                <span class="metric-label">Ítems Sin Cambios:</span>
+                <span class="metric-value">{{ analisis_items.items_sin_cambios }}</span>
+            </div>
+            {% endif %}
+            {% if analisis_items.items_con_alertas is defined %}
+            <div class="metric">
+                <span class="metric-label">⚠️ Ítems con Alertas:</span>
+                <span class="metric-value" style="color: #e74c3c; font-weight: bold;">{{ analisis_items.items_con_alertas }}</span>
+            </div>
+            {% endif %}
+            {% if analisis_items.items_nuevos is defined %}
+            <div class="metric">
+                <span class="metric-label">🆕 Ítems Nuevos:</span>
+                <span class="metric-value" style="color: #fd7e14; font-weight: bold;">{{ analisis_items.items_nuevos }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Motivos Detallados #}
+        {% if motivos_revision %}
+        <div class="reasons-box">
+            <div class="reasons-title">
+                📋 Motivos Detallados de Revisión
+            </div>
+            {% if motivos_revision is string %}
+            <div style="color: #a93226; font-size: 14px; line-height: 1.8;">
+                {{ motivos_revision }}
+            </div>
+            {% else %}
+            <ul class="reasons-list">
+                {% for motivo in motivos_revision %}
+                <li>{{ motivo }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {# Información Adicional #}
+        {% if patron_detectado %}
+        <div style="background-color: #ebf5ff; border: 1px solid #a8d4ff; padding: 15px; margin: 20px 0; border-radius: 6px; border-left: 4px solid #3498db;">
+            <div style="font-weight: bold; color: #1f4788; margin-bottom: 8px; font-size: 15px;">
+                📌 Patrón Detectado
+            </div>
+            <div style="color: #2c3e50; font-size: 14px;">
+                {{ patron_detectado }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="action-box">
+            <div class="action-title">
+                ✓ Acción Requerida
+            </div>
+            <div class="action-content">
+                Por favor, haga clic en el botón inferior para acceder a los detalles completos de la factura en el sistema AFE. Allí podrá revisar los ítems, los motivos de alerta indicados y cualquier documentación adjunta para tomar una decisión.
+            </div>
+
+            <div class="button-container">
+                {% if link_sistema %}
+                <a href="{{ link_sistema }}" class="button button-info single-button">
+                    👁️ Ver Factura en Detalle
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="note-box">
+            <strong>💡 Recordatorio:</strong> Las facturas pendientes de revisión deben ser procesadas dentro de los plazos establecidos para mantener los pagos al día. Si necesita información adicional, contacte al proveedor o al área solicitante.
+        </div>
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #d4dce6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #95a5a6; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte técnico, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

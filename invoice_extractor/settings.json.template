@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "email": "facturacion@empresa.com",
+      "nits": [
+        "800185449-9",
+        "900399741-7"
+      ],
+      "max_correos_por_ejecucion": 10000,
+      "ventana_inicial_dias": 365
+    }
+  ]
+}

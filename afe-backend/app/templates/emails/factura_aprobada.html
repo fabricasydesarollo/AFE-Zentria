@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Aprobada</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #f0fff4;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #28a745;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 2px solid #28a745;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .monto-value {
+            color: #28a745;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .highlight-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            border: 1px solid #c3e6cb;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .highlight-title {
+            font-weight: bold;
+            color: #155724;
+            margin-bottom: 12px;
+            font-size: 17px;
+        }
+        .highlight-content {
+            color: #155724;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .next-steps {
+            background-color: #e7f3ff;
+            border: 1px solid #b8daff;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .next-steps-title {
+            font-weight: bold;
+            color: #004085;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .next-steps-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .next-steps-list li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #004085;
+            line-height: 1.6;
+        }
+        .next-steps-list li::before {
+            content: "→";
+            position: absolute;
+            left: 8px;
+            color: #007bff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .note-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #17a2b8;
+            border-radius: 4px;
+            color: #495057;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                margin: -20px -20px 20px -20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Factura Aprobada</h1>
+            <div class="status-badge">APROBADA</div>
+        </div>
+
+        <p class="greeting">Estimado/a <strong>{{ nombre_responsable }}</strong>,</p>
+
+        <p>Nos complace informarle que la siguiente factura ha sido <strong>aprobada exitosamente</strong> y pasará a validación contable:</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label"> Número de Factura</span>
+                <span class="info-value">{{ numero_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ nombre_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🔢 NIT</span>
+                <span class="info-value">{{ nit_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="monto-value">{{ monto_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Aprobación</span>
+                <span class="info-value">{{ fecha_aprobacion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">👤 Aprobado por</span>
+                <span class="info-value">{{ aprobado_por }}</span>
+            </div>
+        </div>
+
+        <div class="highlight-box">
+            <div class="highlight-title">
+                ✓ Estado de la Factura
+            </div>
+            <div class="highlight-content">
+                La factura ha sido revisada, validada y aprobada. Ahora será enviada al área de contabilidad para validación final antes de ser procesada por Tesorería.
+            </div>
+        </div>
+
+        {# Mostrar observaciones si existen #}
+        {% if observaciones %}
+        <div style="background-color: #e8f4f8; border-left: 4px solid #17a2b8; border: 1px solid #d4e8f0; padding: 20px; margin: 25px 0; border-radius: 6px;">
+            <div style="font-weight: bold; color: #005a6f; margin-bottom: 12px; font-size: 16px;">
+                📝 Observaciones Adicionales
+            </div>
+            <div style="background-color: white; padding: 15px; border-radius: 4px; border: 1px solid #b8daff; color: #333; line-height: 1.8; font-size: 15px;">
+                {{ observaciones }}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="next-steps">
+            <div class="next-steps-title">
+                 Próximos Pasos
+            </div>
+            <ul class="next-steps-list">
+                <li>La factura será revisada por el área de contabilidad</li>
+                <li>Contabilidad validará la información contable antes de enviar a Tesorería</li>
+                <li>Si todo está correcto, se enviará a Tesorería para procesamiento</li>
+                <li>Puede consultar el estado en cualquier momento en el sistema AFE</li>
+            </ul>
+        </div>
+
+        <div class="note-box">
+            <strong>💬 Información Adicional:</strong> Si tiene alguna pregunta o necesita más detalles, por favor contacte al área de contabilidad o al responsable asignado.
+        </div>
+
+        {# Botón para ir a la factura en el dashboard #}
+        {% if url_factura %}
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ url_factura }}" style="display: inline-block; padding: 14px 36px; background-color: #28a745; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; border: 2px solid #28a745;">
+                📊 Ver Factura en el Dashboard
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #adb5bd; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte técnico, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

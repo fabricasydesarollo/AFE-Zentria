@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Aprobada Automáticamente</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #17a2b8;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #17a2b8;
+            margin: 0;
+            font-size: 24px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #17a2b8;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .auto-badge {
+            display: block;
+            text-align: center;
+            padding: 12px 20px;
+            background-color: #e3f2fd;
+            border: 2px solid #17a2b8;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+            color: #0277bd;
+        }
+        .auto-badge::before {
+            content: "";
+            font-size: 24px;
+        }
+        .info-section {
+            margin: 20px 0;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        .info-row {
+            display: block;
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+            display: block;
+            margin-top: 3px;
+        }
+        .criteria-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .criteria-title {
+            font-weight: bold;
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: block;
+        }
+        .criteria-title::before {
+            content: "✓";
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+        }
+        .criteria-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+        .criteria-list li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #155724;
+        }
+        .criteria-list li::before {
+            content: "•";
+            position: absolute;
+            left: 10px;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .analysis-box {
+            background-color: #fff9e6;
+            border: 1px solid #ffd700;
+            padding: 18px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        .analysis-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 12px;
+            display: block;
+        }
+        .analysis-title::before {
+            content: "";
+            font-size: 20px;
+        }
+        .metric {
+            display: block;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e0e0e0;
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            color: #666;
+        }
+        .metric-value {
+            font-weight: bold;
+            color: #333;
+            display: block;
+            margin-top: 3px;
+        }
+        .confidence-high {
+            color: #28a745;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .footer-note {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 13px;
+            color: #0c5460;
+        }
+        .footer-note strong {
+            color: #004085;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .info-row {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> Factura Aprobada Automáticamente</h1>
+            <div class="status-badge">APROBADA AUTOMÁTICAMENTE</div>
+        </div>
+
+        <p>Estimado/a <strong>{{responsable_nombre}}</strong>,</p>
+
+        <div class="auto-badge">
+            Sistema de Aprobación Automática Activado
+        </div>
+
+        <p>Le informamos que la siguiente factura recurrente ha sido <strong>aprobada automáticamente</strong> por nuestro sistema de análisis inteligente:</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label"> Número de Factura:</span>
+                <span class="info-value">{{numero_factura}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor:</span>
+                <span class="info-value">{{proveedor_nombre}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total:</span>
+                <span class="info-value"><strong>${{monto|currency}}</strong></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Emisión:</span>
+                <span class="info-value">{{fecha_emision}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"> Concepto:</span>
+                <span class="info-value">{{concepto}}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label"> Fecha de Aprobación:</span>
+                <span class="info-value">{{fecha_aprobacion|default('Hoy')}}</span>
+            </div>
+        </div>
+
+        <div class="criteria-box">
+            <div class="criteria-title">
+                Criterios de Aprobación Cumplidos
+            </div>
+            <ul class="criteria-list">
+                {% for criterio in criterios_cumplidos %}
+                <li>{{criterio}}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="analysis-box">
+            <div class="analysis-title">
+                Análisis del Sistema
+            </div>
+            <div class="metric">
+                <span class="metric-label">Nivel de Confianza:</span>
+                <span class="metric-value confidence-high">{{confianza_pct|default(95.0)}}%</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Patrón Detectado:</span>
+                <span class="metric-value">{{patron_detectado|default('Factura Recurrente')}}</span>
+            </div>
+            {% if factura_referencia %}
+            <div class="metric">
+                <span class="metric-label">Factura de Referencia:</span>
+                <span class="metric-value">{{factura_referencia}}</span>
+            </div>
+            {% endif %}
+            {% if variacion_monto is defined %}
+            <div class="metric">
+                <span class="metric-label">Variación de Monto:</span>
+                <span class="metric-value">{{variacion_monto|abs}}%</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="footer-note">
+            <strong>ℹ️ Nota Importante:</strong> Esta factura ha sido aprobada automáticamente porque cumple con todos los criterios de validación del sistema. La factura es idéntica o muy similar a facturas previas del mismo proveedor, con variaciones dentro de los límites permitidos.
+            <br><br>
+            La factura será enviada al área de contabilidad para validación final antes de ser procesada por Tesorería. Si detecta alguna irregularidad, por favor contacte inmediatamente al área de contabilidad.
+        </div>
+
+        {% if url_ver_factura %}
+        <div style="text-align: center; margin-top: 25px;">
+            <a href="{{url_ver_factura}}" style="display: inline-block; padding: 12px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                👁️ Ver Detalles en el Sistema
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p><strong>Sistema AFE - Automatización de Facturas Empresariales</strong></p>
+            <p>Este es un correo automático generado por el sistema de gestión de facturas</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Gestión Inteligente de Documentos
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #999; font-size: 11px; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

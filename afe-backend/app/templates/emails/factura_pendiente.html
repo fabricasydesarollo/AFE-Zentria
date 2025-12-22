@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura Pendiente de Aprobación</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ffc107;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            background-color: #fff9e6;
+            margin: -30px -30px 30px -30px;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            color: #ff8800;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ffc107;
+            color: #000;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 2px solid #ffc107;
+        }
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+        .info-section {
+            margin: 25px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        .info-row {
+            padding: 14px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            color: #212529;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .monto-value {
+            color: #ff8800;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .urgency-box {
+            background-color: #fff9e6;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .urgency-title {
+            font-weight: bold;
+            color: #856404;
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+        .urgency-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff8800;
+            margin: 10px 0;
+        }
+        .urgency-message {
+            margin: 10px 0 0 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .action-box {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+        }
+        .action-title {
+            font-weight: bold;
+            color: #0d47a1;
+            margin-bottom: 15px;
+            font-size: 17px;
+        }
+        .action-content {
+            margin: 15px 0;
+            color: #0d47a1;
+            line-height: 1.8;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            border: 2px solid #007bff;
+        }
+        .reminder-note {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #6c757d;
+            border-radius: 4px;
+            color: #495057;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer {
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #e9ecef;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        .footer-brand {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header {
+                margin: -20px -20px 20px -20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏳ Factura Pendiente de Aprobación</h1>
+            <div class="status-badge">REQUIERE ACCIÓN</div>
+        </div>
+
+        <p class="greeting">Estimado/a <strong>{{ nombre_responsable }}</strong>,</p>
+
+        <p>Tiene una nueva factura <strong>asignada para su revisión y aprobación</strong>. Su pronta atención es necesaria para mantener el flujo de pagos actualizado:</p>
+
+        <div class="info-section">
+            <div class="info-row">
+                <span class="info-label"> Número de Factura</span>
+                <span class="info-value">{{ numero_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏢 Proveedor</span>
+                <span class="info-value">{{ nombre_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🔢 NIT</span>
+                <span class="info-value">{{ nit_proveedor }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 Monto Total</span>
+                <span class="monto-value">{{ monto_factura }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 Fecha de Recepción</span>
+                <span class="info-value">{{ fecha_recepcion }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">🏷️ Centro de Costos</span>
+                <span class="info-value">{{ centro_costos }}</span>
+            </div>
+        </div>
+
+        <div class="urgency-box">
+            <div class="urgency-title">
+                ⏰ Tiempo Pendiente
+            </div>
+            <div class="urgency-value">{{ dias_pendiente }} días</div>
+            <p class="urgency-message">
+                ⚠️ Atención prioritaria requerida
+            </p>
+        </div>
+
+        <div class="action-box">
+            <div class="action-title">
+                 Acción Requerida
+            </div>
+            <div class="action-content">
+                Por favor, revise la factura y sus documentos adjuntos en el sistema AFE. Proceda con la aprobación si todo está en orden, o rechace si encuentra alguna inconsistencia.
+            </div>
+
+            <div class="button-container">
+                <a href="{{ link_sistema }}" class="button">
+                    👁️ Revisar Factura en el Sistema
+                </a>
+            </div>
+        </div>
+
+        <div class="reminder-note">
+            <strong>💡 Recordatorio:</strong> Las facturas deben ser procesadas dentro de los plazos establecidos para evitar retrasos en los pagos y mantener buenas relaciones con proveedores. Si necesita información adicional, contacte al proveedor o al área solicitante.
+        </div>
+
+        <div class="footer">
+            <p class="footer-brand">Sistema AFE - Gestión de Facturas Empresariales</p>
+            <p>Este es un correo automático generado por el sistema</p>
+            <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <strong>Zentria</strong> | Soluciones Empresariales Inteligentes
+            </p>
+            <p>&copy; 2025 Zentria - Todos los derechos reservados</p>
+            <p style="color: #adb5bd; margin-top: 10px;">
+                Por favor no responda a este mensaje. Para soporte técnico, contacte a su administrador del sistema.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

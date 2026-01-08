@@ -1,12 +1,8 @@
 """
-Servicio Enterprise: Clasificación Automática de Proveedores
-=============================================================
+Servicio de clasificación automática de proveedores.
 
-Este servicio se integra al workflow para:
-1. Clasificar automáticamente nuevos proveedores
-2. Reclasificar periódicamente proveedores existentes
-3. Detectar cambios en patrones (maduración o degradación)
-
+Clasifica y reclasifica proveedores basándose en patrones
+de facturación y antigüedad.
 """
 
 from typing import Optional, Dict, Any
@@ -27,16 +23,7 @@ from app.models.workflow_aprobacion import (
 
 
 class ClasificacionProveedoresService:
-    """
-    Servicio de clasificación automática de proveedores.
-
-    Se ejecuta:
-    - Al crear un nuevo proveedor (clasificación inicial)
-    - Mensualmente (reclasificación de todos)
-    - Bajo demanda (API endpoint)
-
-    Nivel: Fortune 500 Enterprise
-    """
+    """Servicio de clasificación automática de proveedores."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -54,7 +41,7 @@ class ClasificacionProveedoresService:
             'monto_requiere_oc': 10_000_000  # $10M COP
         }
 
-        # Umbrales de auto-aprobación por tipo de servicio (Fortune 500 standard)
+        # Umbrales de auto-aprobación por tipo de servicio
         self.UMBRALES_APROBACION = {
             TipoServicioProveedor.SERVICIO_FIJO_MENSUAL: {
                 'umbral_base': 0.95,
@@ -92,21 +79,7 @@ class ClasificacionProveedoresService:
         nit: str,
         forzar_reclasificacion: bool = False
     ) -> Dict[str, Any]:
-        """
-        Clasifica un proveedor automáticamente.
-
-        Esta función se llama:
-        1. Al crear asignación de nuevo proveedor
-        2. Al procesar primera factura de proveedor nuevo
-        3. En reclasificación mensual automática
-
-        Args:
-            nit: NIT del proveedor
-            forzar_reclasificacion: Si True, reclasifica incluso si ya está clasificado
-
-        Returns:
-            Resultado de clasificación con metadata
-        """
+        """Clasifica un proveedor automáticamente basándose en historial de facturas."""
         # Obtener o crear asignación
         asignacion = self.db.query(AsignacionNitResponsable).filter(
             AsignacionNitResponsable.nit == nit

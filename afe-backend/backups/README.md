@@ -2,7 +2,7 @@
 
 Esta carpeta contiene backups temporales y scripts de respaldo.
 
-## ⚠️ IMPORTANTE
+## IMPORTANTE
 
 **Los backups de base de datos NO deben versionarse en Git.**
 
@@ -79,7 +79,7 @@ PRIVADO_ODO/
     └── backup_schema_reference.sql  # Solo para referencia de estructura
 ```
 
-## ✅ Checklist Antes de Cambios Importantes
+## Checklist Antes de Cambios Importantes
 
 Antes de:
 - Ejecutar migraciones grandes
@@ -93,7 +93,7 @@ Antes de:
 mysqldump -u root -proot bd_afe > "backup_pre_cambio_$(date +%Y%m%d_%H%M%S).sql"
 ```
 
-## 🚨 Restauración de Emergencia
+##  Restauración de Emergencia
 
 Si algo sale mal:
 
@@ -136,11 +136,11 @@ ls -lh backup_bd_afe_*.sql
 ## 🔐 Seguridad
 
 **NUNCA** versionar en Git:
-- ❌ Backups SQL con datos reales
-- ❌ Archivos `.env` con credenciales
-- ❌ Dumps de datos de usuarios
+-  Backups SQL con datos reales
+-  Archivos `.env` con credenciales
+-  Dumps de datos de usuarios
 
 **SÍ** versionar:
-- ✅ Scripts de backup
-- ✅ Esquemas de BD (sin datos)
-- ✅ Documentación de procedimientos
+- Scripts de backup
+- Esquemas de BD (sin datos)
+- Documentación de procedimientos

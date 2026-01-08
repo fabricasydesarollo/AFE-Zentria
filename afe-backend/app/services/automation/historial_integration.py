@@ -7,8 +7,6 @@ Proporciona funciones helper para:
 - Ajustar scores de confianza según tipo de patrón (TIPO_A/B/C)
 - Validar montos contra rangos históricos
 
-
-Fecha: 2025-10-08
 """
 
 import hashlib

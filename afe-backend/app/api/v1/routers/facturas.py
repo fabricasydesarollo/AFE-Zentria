@@ -50,9 +50,7 @@ router = APIRouter(tags=["Facturas"])
 
 
 #  ENDPOINT PRINCIPAL PARA GRANDES VOLÚMENES 
-# -----------------------------------------------------
 # Listar facturas con CURSOR PAGINATION (Scroll Infinito)
-# -----------------------------------------------------
 @router.get(
     "/cursor",
     response_model=CursorPaginatedResponse[FacturaRead],
@@ -69,58 +67,7 @@ def list_with_cursor(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    **Endpoint empresarial para scroll infinito con performance constante.**
-
-    Ventajas sobre paginación offset:
-    - Performance constante O(1) sin importar el tamaño del dataset
-    - No hay "deep pagination problem" (página 10,000 es instantánea)
-    -  Ideal para scroll infinito en frontend
-    -  Usado por: Stripe, Twitter, GitHub, Facebook
-
-    **Cómo usar:**
-
-    1. Primera carga (sin cursor):
-    ```
-    GET /facturas/cursor?limit=500
-    ```
-
-    2. Siguientes páginas (usar next_cursor de respuesta anterior):
-    ```
-    GET /facturas/cursor?limit=500&cursor=MjAyNS0xMC0wOFQxMDowMDowMHwxMjM0NQ==
-    ```
-
-    **Respuesta:**
-    ```json
-    {
-        "data": [...500 facturas...],
-        "cursor": {
-            "has_more": true,
-            "next_cursor": "MjAyNS0xMC0wOFQxMDowMDowMHwxMjM0NQ==",
-            "prev_cursor": null,
-            "count": 500
-        }
-    }
-    ```
-
-    **Frontend (ejemplo React):**
-    ```javascript
-    const [facturas, setFacturas] = useState([]);
-    const [nextCursor, setNextCursor] = useState(null);
-
-    const loadMore = async () => {
-        const url = nextCursor
-            ? `/facturas/cursor?cursor=${nextCursor}&limit=500`
-            : `/facturas/cursor?limit=500`;
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        setFacturas([...facturas, ...data.data]);
-        setNextCursor(data.cursor.next_cursor);
-    };
-    ```
-    """
+    """Paginación basada en cursor para grandes volúmenes. Soporta filtrado multi-tenant."""
     # Validar límite
     if limit < 1 or limit > 2000:
         raise HTTPException(
@@ -218,9 +165,7 @@ def list_with_cursor(
 
 
 #  ENDPOINT COMPLETO PARA DASHBOARD ADMINISTRATIVO 
-# -----------------------------------------------------
 # Obtener TODAS las facturas sin límites (Dashboard completo)
-# -----------------------------------------------------
 @router.get(
     "/all",
     response_model=List[FacturaRead],
@@ -233,55 +178,7 @@ def list_all_for_dashboard(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    ** ENDPOINT EMPRESARIAL PARA DASHBOARD COMPLETO**
-
-    Retorna TODAS las facturas del sistema sin límites de paginación.
-    Diseñado específicamente para dashboards administrativos que necesitan
-    vista completa de todas las operaciones.
-
-    **Casos de uso:**
-    -  Dashboards administrativos con vista completa
-    -  Análisis de tendencias sobre todo el dataset
-    -  Reportes ejecutivos que requieren datos completos
-    -  Vistas gerenciales sin restricciones de paginación
-
-    **Control de acceso:**
-    - Admin sin `solo_asignadas`: Ve TODAS las facturas del sistema
-    - Admin con `solo_asignadas=true`: Ve solo sus facturas asignadas
-    - Usuario: Automáticamente ve solo sus proveedores asignados
-
-    **Performance:**
-    - Usa índice `idx_facturas_orden_cronologico` para queries optimizadas
-    -  Sin OFFSET (evita deep pagination problem)
-    -  Lazy loading de relaciones para minimizar memoria
-    -  Para datasets >50k facturas, considerar usar `/facturas/cursor` con scroll infinito
-
-    **Orden de resultados:**
-    Cronológico descendente: Año ↓ → Mes ↓ → Fecha ↓ (más recientes primero)
-
-    **Ejemplo de respuesta:**
-    ```json
-    [
-        {
-            "id": 1,
-            "numero_factura": "FACT-001",
-            "cufe": "abc123...",
-            "fecha_emision": "2025-10-08",
-            "total": 15000.00,
-            "estado": "aprobada",
-            "proveedor": {...},
-            "cliente": {...}
-        },
-        ...
-    ]
-    ```
-
-    **Recomendaciones de uso:**
-    - Use este endpoint cuando necesite vista completa sin scroll/paginación
-    - Para UIs con scroll infinito, prefiera `/facturas/cursor`
-    - Para reportes paginados, use `/facturas/` con parámetros page/per_page
-    """
+    """Retorna todas las facturas sin paginación. Admin ve todas, responsable solo asignadas."""
     # Determinar permisos según rol
     responsable_id = None
 
@@ -342,9 +239,7 @@ def list_all_for_dashboard(
     return facturas
 
 
-# -----------------------------------------------------
 # Listar todas las facturas (con paginación empresarial)
-# -----------------------------------------------------
 @router.get(
     "/",
     response_model=PaginatedResponse[FacturaRead],
@@ -361,36 +256,7 @@ def list_all(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista facturas con control de acceso basado en roles y paginación empresarial:
-    - Admin: Ve TODAS las facturas (o solo asignadas si solo_asignadas=true)
-    - Usuario: Solo ve facturas de proveedores (NITs) que tiene asignados
-
-    **Parámetros de paginación:**
-    - page: Página actual (base 1, default: 1)
-    - per_page: Registros por página (default: 500, máximo: 2000)
-
-    **Parámetros de filtrado:**
-    - solo_asignadas: Solo facturas asignadas al usuario actual (default: false)
-    - mes_actual_only: Solo facturas del mes actual (default: false)
-    - nit: Filtrar por NIT del proveedor (opcional)
-    - numero_factura: Filtrar por número de factura (opcional)
-
-    **Respuesta:**
-    ```json
-    {
-        "data": [...facturas...],
-        "pagination": {
-            "total": 5420,
-            "page": 1,
-            "per_page": 500,
-            "total_pages": 11,
-            "has_next": true,
-            "has_prev": false
-        }
-    }
-    ```
-    """
+    """Lista facturas con paginación offset. Soporta filtros por NIT, número y mes."""
     # Validar parámetros de paginación
     if page < 1:
         raise HTTPException(
@@ -471,9 +337,7 @@ def list_all(
     )
 
 
-# -----------------------------------------------------
 # Crear o actualizar factura
-# -----------------------------------------------------
 @router.post(
     "/",
     response_model=FacturaRead,
@@ -505,9 +369,7 @@ def create_invoice(
     return f
 
 
-# -----------------------------------------------------
 # Obtener factura por ID
-# -----------------------------------------------------
 @router.get(
     "/{factura_id}",
     response_model=FacturaRead,
@@ -529,9 +391,7 @@ def get_one(
     return f
 
 
-# -----------------------------------------------------
 # Obtener facturas por NIT (con paginación)
-# -----------------------------------------------------
 @router.get(
     "/nit/{nit}",
     response_model=PaginatedResponse[FacturaRead],
@@ -545,9 +405,7 @@ def get_by_nit(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene facturas de un proveedor específico con paginación empresarial.
-    """
+    """Obtiene facturas de un proveedor por NIT."""
     # Validar parámetros
     if page < 1:
         raise HTTPException(
@@ -588,9 +446,7 @@ def get_by_nit(
     )
 
 
-# -----------------------------------------------------
 # Obtener factura por CUFE
-# -----------------------------------------------------
 @router.get(
     "/cufe/{cufe}",
     response_model=FacturaRead,
@@ -612,9 +468,7 @@ def get_by_cufe(
     return f
 
 
-# -----------------------------------------------------
 # Obtener factura por número de factura
-# -----------------------------------------------------
 @router.get(
     "/numero/{numero_factura}",
     response_model=FacturaRead,
@@ -636,9 +490,7 @@ def get_by_numero(
     return f
 
 
-# -----------------------------------------------------
 # Aprobar factura
-# -----------------------------------------------------
 @router.post(
     "/{factura_id}/aprobar",
     response_model=FacturaRead,
@@ -651,15 +503,7 @@ def aprobar_factura(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "responsable"])),
 ):
-    """
-    Aprueba una factura y registra quién la aprobó.
-
-    **IMPORTANTE:** También actualiza el workflow asociado para mantener sincronización.
-
-    Parámetros esperados en payload:
-    - aprobado_por: Usuario que aprueba
-    - observaciones (opcional): Comentarios adicionales
-    """
+    """Aprueba una factura y actualiza el workflow asociado."""
     from app.models.factura import Factura, EstadoFactura
     from app.models.workflow_aprobacion import WorkflowAprobacionFactura
     from app.services.workflow_automatico import WorkflowAutomaticoService
@@ -767,9 +611,7 @@ def aprobar_factura(
     return factura
 
 
-# -----------------------------------------------------
 # Rechazar factura
-# -----------------------------------------------------
 @router.post(
     "/{factura_id}/rechazar",
     response_model=FacturaRead,
@@ -782,16 +624,7 @@ def rechazar_factura(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["admin", "responsable"])),
 ):
-    """
-    Rechaza una factura y registra el motivo.
-
-    **IMPORTANTE:** También actualiza el workflow asociado para mantener sincronización.
-
-    Parámetros esperados en payload:
-    - rechazado_por: Usuario que rechaza
-    - motivo: Razón del rechazo (requerido)
-    - detalle (opcional): Detalle adicional del rechazo
-    """
+    """Rechaza una factura y actualiza el workflow asociado."""
     from app.models.factura import Factura, EstadoFactura
     from app.models.workflow_aprobacion import WorkflowAprobacionFactura
     from app.services.workflow_automatico import WorkflowAutomaticoService
@@ -902,9 +735,7 @@ def rechazar_factura(
 
 #  ENDPOINTS PARA CLASIFICACIÓN POR PERÍODOS MENSUALES 
 
-# -----------------------------------------------------
 # Obtener resumen de facturas agrupadas por mes
-# -----------------------------------------------------
 @router.get(
     "/periodos/resumen",
     tags=["Reportes - Períodos Mensuales"],
@@ -918,26 +749,7 @@ def get_resumen_por_mes(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Retorna facturas agrupadas por período (mes/año) con:
-    - Total de facturas por mes
-    - Monto total por mes
-    - Subtotal e IVA por mes
-
-    Ejemplo de respuesta:
-    [
-        {
-            "periodo": "2025-07",
-            "año": 2025,
-            "mes": 7,
-            "total_facturas": 6,
-            "monto_total": 17126907.00,
-            "subtotal_total": 14000000.00,
-            "iva_total": 3126907.00
-        },
-        ...
-    ]
-    """
+    """Resumen de facturas agrupadas por mes con totales agregados."""
     return get_facturas_resumen_por_mes(
         db=db,
         año=año,
@@ -962,38 +774,7 @@ def get_resumen_detallado_por_mes(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Retorna facturas agrupadas por período (mes/año) CON DESGLOSE DETALLADO POR ESTADO.
-
-    IMPORTANTE: Agrupa por creado_en (fecha de creación) para sincronizar con /dashboard/mes-actual.
-
-    **MULTI-TENANT:**
-    - SuperAdmin: Ve TODAS las facturas sin filtro (o filtradas por grupo específico con X-Grupo-Id)
-    - Admin: Ve solo facturas de SUS grupos asignados
-    - Responsable: Ve solo facturas donde accion_por = user.id
-    - Contador: Ve TODAS las facturas (necesita visibilidad completa)
-    - Viewer: Ve solo facturas de SUS grupos asignados
-
-    Ejemplo de respuesta:
-    [
-        {
-            "periodo": "2025-10",
-            "año": 2025,
-            "mes": 10,
-            "total_facturas": 100,
-            "monto_total": 50000000.00,
-            "subtotal_total": 42000000.00,
-            "iva_total": 8000000.00,
-            "facturas_por_estado": {
-                "en_revision": 30,
-                "aprobada": 40,
-                "aprobada_auto": 25,
-                "rechazada": 5
-            }
-        },
-        ...
-    ]
-    """
+    """Resumen mensual con desglose por estado. Filtra por grupo según rol (multi-tenant)."""
     from app.core.grupos_utils import get_grupos_usuario
 
     # Obtener rol del usuario
@@ -1044,9 +825,7 @@ def get_resumen_detallado_por_mes(
     )
 
 
-# -----------------------------------------------------
 # Obtener facturas de un período específico (con paginación)
-# -----------------------------------------------------
 @router.get(
     "/periodos/{periodo}",
     response_model=PaginatedResponse[FacturaRead],
@@ -1063,19 +842,7 @@ def get_facturas_periodo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene facturas de un período específico con paginación empresarial.
-
-    Args:
-        periodo: Formato "YYYY-MM" (ej: "2025-07" para julio 2025)
-        page: Página actual (base 1, default: 1)
-        per_page: Registros por página (default: 500, máximo: 2000)
-        proveedor_id: Filtrar por proveedor (opcional)
-        estado: Filtrar por estado (opcional)
-
-    Returns:
-        Respuesta paginada con facturas del período
-    """
+    """Obtiene facturas de un período (YYYY-MM) con paginación."""
     # Validar formato de período
     if len(periodo) != 7 or periodo[4] != '-':
         raise HTTPException(
@@ -1135,9 +902,7 @@ def get_facturas_periodo(
     )
 
 
-# -----------------------------------------------------
 # Obtener estadísticas de un período
-# -----------------------------------------------------
 @router.get(
     "/periodos/{periodo}/estadisticas",
     tags=["Reportes - Períodos Mensuales"],
@@ -1150,26 +915,7 @@ def get_stats_periodo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Retorna estadísticas completas de un período:
-    - Total de facturas
-    - Monto total, subtotal, IVA
-    - Promedio por factura
-    - Desglose por estado (pendiente, aprobada, etc.)
-
-    Ejemplo de respuesta:
-    {
-        "periodo": "2025-07",
-        "total_facturas": 6,
-        "monto_total": 17126907.00,
-        "subtotal": 14000000.00,
-        "iva": 3126907.00,
-        "promedio": 2854484.50,
-        "por_estado": [
-            {"estado": "en_revision", "cantidad": 6, "monto": 17126907.00}
-        ]
-    }
-    """
+    """Estadísticas de un período con desglose por estado."""
     # Validar formato
     if len(periodo) != 7 or periodo[4] != '-':
         raise HTTPException(
@@ -1184,9 +930,7 @@ def get_stats_periodo(
     )
 
 
-# -----------------------------------------------------
 # Contar facturas de un período
-# -----------------------------------------------------
 @router.get(
     "/periodos/{periodo}/count",
     tags=["Reportes - Períodos Mensuales"],
@@ -1200,10 +944,7 @@ def count_periodo(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Cuenta facturas de un período específico.
-    Útil para paginación y reportes rápidos.
-    """
+    """Cuenta facturas de un período."""
     if len(periodo) != 7 or periodo[4] != '-':
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1220,9 +961,7 @@ def count_periodo(
     return {"periodo": periodo, "total": count}
 
 
-# -----------------------------------------------------
 # Obtener años disponibles
-# -----------------------------------------------------
 @router.get(
     "/periodos/años/disponibles",
     tags=["Reportes - Períodos Mensuales"],
@@ -1233,19 +972,12 @@ def get_años(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Retorna años disponibles en orden descendente.
-    Útil para filtros en frontend.
-
-    Ejemplo: [2025, 2024, 2023]
-    """
+    """Retorna años disponibles en orden descendente."""
     años = get_años_disponibles(db)
     return {"años": años}
 
 
-# -----------------------------------------------------
 # Jerarquía empresarial: Año → Mes → Facturas
-# -----------------------------------------------------
 @router.get(
     "/periodos/jerarquia",
     tags=["Reportes - Períodos Mensuales"],
@@ -1261,46 +993,7 @@ def get_jerarquia(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    **Vista Jerárquica Empresarial** para organización cronológica de facturas.
-
-    Retorna estructura anidada:
-    ```json
-    {
-        "2025": {
-            "10": {
-                "total_facturas": 4,
-                "monto_total": 12500.00,
-                "subtotal": 10500.00,
-                "iva": 2000.00,
-                "facturas": [
-                    {
-                        "id": 123,
-                        "numero_factura": "FACT-001",
-                        "fecha_emision": "2025-10-15",
-                        "total": 5000.00,
-                        "estado": "aprobada"
-                    },
-                    ...
-                ]
-            },
-            "09": {...}
-        },
-        "2024": {...}
-    }
-    ```
-
-    **Filtros disponibles:**
-    - `año`: Filtrar por año específico (ej: 2025)
-    - `mes`: Filtrar por mes específico (1-12)
-    - `proveedor_id`: Filtrar por proveedor
-    - `estado`: Filtrar por estado
-    - `limit_por_mes`: Límite de facturas por mes (default: 100)
-
-    **Orden:** Año DESC → Mes DESC → Fecha DESC (más recientes primero)
-
-    **Performance:** Usa índice `idx_facturas_orden_cronologico` para queries ultra-rápidas
-    """
+    """Vista jerárquica año→mes→facturas con totales por período."""
     return get_jerarquia_facturas(
         db=db,
         año=año,
@@ -1312,9 +1005,7 @@ def get_jerarquia(
 
 
 #  ENDPOINT DE EXPORTACIÓN PARA REPORTES COMPLETOS 
-# -----------------------------------------------------
 # Exportar facturas a CSV
-# -----------------------------------------------------
 @router.get(
     "/export/csv",
     tags=["Exportación"],
@@ -1330,27 +1021,7 @@ def export_to_csv(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    **Exportación empresarial de facturas a CSV.**
-
-    Permite descargar reportes completos sin límites de paginación.
-
-    **Casos de uso:**
-    -  Análisis en Excel/Google Sheets
-    -  Reportes financieros para gerencia
-    -  Auditorías contables
-    -  Backup de datos
-
-    **Recomendaciones:**
-    - Use filtros de fecha para limitar el dataset
-    - Para datasets >50k registros, considere exportar por períodos
-    - El archivo se genera en tiempo real (puede tardar en datasets grandes)
-
-    **Ejemplo:**
-    ```
-    GET /facturas/export/csv?fecha_desde=2025-01-01&fecha_hasta=2025-12-31&estado=aprobada
-    ```
-    """
+    """Exporta facturas a CSV con filtros opcionales."""
     from app.services.export_service import export_facturas_to_csv
 
     # Determinar permisos
@@ -1397,9 +1068,7 @@ def export_to_csv(
         )
 
 
-# -----------------------------------------------------
 # Metadata de exportación
-# -----------------------------------------------------
 @router.get(
     "/export/metadata",
     tags=["Exportación"],
@@ -1413,24 +1082,7 @@ def get_export_info(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene información sobre el dataset a exportar antes de generar el archivo.
-
-    Útil para:
-    - Validar tamaño del dataset antes de exportar
-    - Mostrar preview de lo que se va a descargar
-    - Estimar tiempo de generación
-
-    **Respuesta:**
-    ```json
-    {
-        "total_registros": 15420,
-        "fecha_desde": "2025-01-01",
-        "fecha_hasta": "2025-12-31",
-        "timestamp_generacion": "2025-10-08T10:30:00"
-    }
-    ```
-    """
+    """Obtiene metadata del dataset a exportar (total registros, rangos)."""
     from app.services.export_service import get_export_metadata
 
     # Determinar permisos
@@ -1463,16 +1115,7 @@ def trigger_automation_manually(
     db: Session = Depends(get_db),
     current_user=Depends(require_role("admin"))
 ):
-    """
-    Manually triggers the automation scheduler.
-
-    This endpoint is useful for testing workflow automation without waiting for the scheduled hourly execution.
-    It executes the same logic as the background scheduler:
-    1. Creates workflows for facturas that don't have them yet
-    2. Processes automation decisions (approve/reject/send to review)
-
-    Admin only.
-    """
+    """Ejecuta manualmente el scheduler de automatización. Solo admin."""
     try:
         from app.services.workflow_automatico import WorkflowAutomaticoService
         from app.services.automation.automation_service import AutomationService
@@ -1517,11 +1160,11 @@ def trigger_automation_manually(
                 else:
                     workflows_fallidos += 1
                     if idx <= 5:
-                        logger.warning(f"  ⚠️  Workflow falló para factura {factura.id}: {resultado.get('error')}")
+                        logger.warning(f"   Workflow falló para factura {factura.id}: {resultado.get('error')}")
             except Exception as e:
                 workflows_fallidos += 1
                 if idx <= 5:
-                    logger.error(f"  ❌ Error creando workflow para factura {factura.id}: {str(e)}")
+                    logger.error(f"   Error creando workflow para factura {factura.id}: {str(e)}")
 
         if workflows_creados > 0:
             db.commit()
@@ -1583,7 +1226,7 @@ def trigger_automation_manually(
 
     except Exception as e:
         logger.error(
-            f"❌ Error in manual automation trigger: {str(e)}",
+            f" Error in manual automation trigger: {str(e)}",
             exc_info=True,
             extra={"admin_user": current_user.usuario}
         )
@@ -1604,21 +1247,7 @@ def trigger_automation_manually(
 @router.get(
     "/{factura_id}/pdf",
     summary="Obtener PDF de factura",
-    description="""
-    Obtiene el PDF original de una factura electrónica.
-
-    El PDF se sirve desde el storage de invoice_extractor (../invoice_extractor/adjuntos/).
-
-    **Comportamiento:**
-    - Por defecto: Abre PDF en el navegador (inline)
-    - Con download=true: Fuerza descarga del archivo
-
-    **Permisos:** Todos los roles autenticados pueden acceder
-
-    **Ejemplos:**
-    - GET /facturas/123/pdf → Se abre en navegador
-    - GET /facturas/123/pdf?download=true → Se descarga
-    """,
+    description="Obtiene el PDF original de una factura. Por defecto inline, con download=true descarga.",
     responses={
         200: {
             "description": "PDF de la factura",
@@ -1636,18 +1265,10 @@ async def get_factura_pdf(
         False,
         description="Si es true, fuerza descarga. Si es false, muestra en navegador (inline)"
     ),
-    current_user=Depends(require_role(["admin", "responsable", "contador", "viewer"])),
+    current_user=Depends(get_current_usuario),
     db: Session = Depends(get_db)
 ):
-    """
-    Endpoint profesional para servir PDFs de facturas.
-
-    Features:
-    - Seguridad: Autenticación requerida
-    - Auditoría: Log de todos los accesos
-    - Performance: Cache headers
-    - UX: Inline viewing por defecto
-    """
+    """Sirve el PDF de una factura con autenticación y logging."""
     from app.services.invoice_pdf_service import InvoicePDFService
     from app.models.factura import Factura
 
@@ -1715,18 +1336,7 @@ async def get_factura_pdf(
 @router.get(
     "/{factura_id}/xml",
     summary="Obtener XML de factura electrónica",
-    description="""
-    Obtiene el XML de una factura electrónica (documento oficial DIAN).
-
-    El XML es útil para:
-    - Verificación de firma electrónica
-    - Validación ante la DIAN
-    - Auditorías y compliance
-
-    **Permisos:** Solo admin y contador pueden acceder
-
-    **Importante:** El XML contiene la firma electrónica oficial de la DIAN.
-    """,
+    description="Obtiene el XML oficial DIAN de una factura. Solo admin y contador.",
     responses={
         200: {
             "description": "XML de la factura electrónica",
@@ -1744,14 +1354,10 @@ async def get_factura_pdf(
 )
 async def get_factura_xml(
     factura_id: int,
-    current_user=Depends(require_role(["admin", "contador"])),  # Solo admin y contador
+    current_user=Depends(require_role(["admin", "contador"])),
     db: Session = Depends(get_db)
 ):
-    """
-    Endpoint para servir XMLs de facturas electrónicas.
-
-    Restricción: Solo admin y contador pueden acceder (contiene info sensible).
-    """
+    """Sirve el XML de una factura electrónica. Solo admin y contador."""
     from app.services.invoice_pdf_service import InvoicePDFService
     from app.models.factura import Factura
 
@@ -1808,24 +1414,15 @@ async def get_factura_xml(
 @router.get(
     "/{factura_id}/documentos/info",
     summary="Obtener información de documentos",
-    description="""
-    Obtiene metadata de los documentos (PDF/XML) sin descargarlos.
-
-    Útil para:
-    - Mostrar en UI si hay PDF disponible
-    - Mostrar tamaño de archivos
-    - Verificar disponibilidad antes de descargar
-    """,
+    description="Obtiene metadata de documentos (PDF/XML) sin descargarlos.",
     response_model=dict
 )
 async def get_factura_documentos_info(
     factura_id: int,
-    current_user=Depends(require_role(["admin", "responsable", "contador", "viewer"])),
+    current_user=Depends(get_current_usuario),
     db: Session = Depends(get_db)
 ):
-    """
-    Endpoint para obtener metadata de documentos sin descargarlos.
-    """
+    """Retorna metadata de documentos (PDF/XML) sin descargarlos."""
     from app.services.invoice_pdf_service import InvoicePDFService
     from app.models.factura import Factura
 

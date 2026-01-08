@@ -16,7 +16,7 @@ import {
   FormControl,
   Stack,
 } from '@mui/material';
-import { Refresh, Add, ChevronLeft, ChevronRight, Warning as WarningIcon } from '@mui/icons-material';
+import { Refresh, Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAppSelector } from '../../app/hooks';
 import { zentriaColors } from '../../theme/colors';
 import apiClient from '../../services/api';
@@ -30,8 +30,9 @@ import {
   FacturaActionsMenu,
   ChartsSection,
   AlertaMes,
+  CuarentenaAlert,
 } from './components';
-import { useDashboardData, useFacturaDialog } from './hooks';
+import { useDashboardData, useFacturaDialog, useCuarentenaData } from './hooks';
 import { facturasService } from './services/facturas.service';
 import type { Factura, EstadoFactura, VistaFacturas, FacturaFormData } from './types';
 import { DEFAULT_ROWS_PER_PAGE } from './constants';
@@ -81,9 +82,6 @@ function DashboardPage() {
   const [facturaToDelete, setFacturaToDelete] = useState<Factura | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Cuarentena state (MULTI-TENANT 2025-12-14)
-  const [facturasCuarentena, setFacturasCuarentena] = useState<number>(0);
-
   // Custom hooks
   const {
     facturas,
@@ -112,6 +110,9 @@ function DashboardPage() {
     closeDialog,
   } = useFacturaDialog();
 
+  // Cuarentena data (Multi-Tenant 2025-12-29)
+  const { cuarentena } = useCuarentenaData(user?.rol);
+
   // Search filter
   const filteredFacturas = facturas.filter(
     (factura) =>
@@ -128,26 +129,6 @@ function DashboardPage() {
 
   const nombreMesActual = MESES[mesActual - 1];
   const nombreMesSeleccionado = MESES[mesSeleccionado - 1];
-
-  // Cargar contador de facturas en cuarentena (solo SuperAdmin)
-  useEffect(() => {
-    const cargarCuarentena = async () => {
-      if (user?.rol === 'superadmin') {
-        try {
-          const response = await apiClient.get('/facturas/all');
-          // Filtrar facturas con estado en_cuarentena
-          const facturasCuarentena = Array.isArray(response.data)
-            ? response.data.filter((f: any) => f.estado === 'en_cuarentena')
-            : [];
-          setFacturasCuarentena(facturasCuarentena.length);
-        } catch (error) {
-          console.error('Error cargando facturas en cuarentena:', error);
-        }
-      }
-    };
-
-    cargarCuarentena();
-  }, [user?.rol]);
 
   // Handlers
   const handleSearch = (value: string) => {
@@ -409,50 +390,13 @@ function DashboardPage() {
         </Alert>
       )}
 
-      {/* MULTI-TENANT 2025-12-14: Facturas en Cuarentena */}
-      {user?.rol === 'superadmin' && facturasCuarentena > 0 && (
-        <Alert
-          severity="warning"
-          icon={<WarningIcon />}
-          sx={{
-            mb: 3,
-            borderLeft: `4px solid ${zentriaColors.naranja.main}`,
-            backgroundColor: 'rgba(255, 152, 0, 0.05)',
-            '& .MuiAlert-icon': {
-              color: zentriaColors.naranja.main,
-            },
-          }}
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              href="/email-config?tab=cuarentena"
-              sx={{
-                fontWeight: 600,
-                textTransform: 'none',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                },
-              }}
-            >
-              Ver Facturas
-            </Button>
-          }
-        >
-          <Typography variant="body1" fontWeight="bold" component="div">
-            {facturasCuarentena} factura{facturasCuarentena !== 1 ? 's' : ''} en cuarentena
-          </Typography>
-          <Typography variant="body2" component="div">
-            Estas facturas no tienen grupo asignado porque sus NITs no están configurados.
-            Configure los NITs en "Configuración de Correos" para procesarlas automáticamente.
-          </Typography>
-        </Alert>
-      )}
-
       {/* Campana de alerta de fin de mes - Siempre visible en la parte superior */}
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
         <AlertaMes />
       </Box>
+
+      {/* Cuarentena Alert - Professional Multi-Tenant (2025-12-29) */}
+      <CuarentenaAlert cuarentena={cuarentena} />
 
       {/* Header - Responsive: Vertical on mobile, Horizontal on desktop */}
       <Box

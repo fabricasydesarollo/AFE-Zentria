@@ -1,13 +1,4 @@
-# app/api/v1/routers/automation.py
-"""
-Router para las APIs del sistema de automatización de facturas.
-
-Proporciona endpoints para:
-- Ejecutar procesamiento manual de automatización
-- Consultar estado de facturas procesadas automáticamente  
-- Configurar parámetros de automatización
-- Obtener estadísticas del sistema
-"""
+"""Router para las APIs del sistema de automatización de facturas."""
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
@@ -31,9 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Automatización"])
 
 
-# ==================== ENDPOINT DE INICIALIZACIÓN ENTERPRISE ====================
-
-@router.post("/inicializar-sistema", summary=" Inicialización Enterprise del Sistema Completo")
+@router.post("/inicializar-sistema", summary="Inicialización del Sistema Completo")
 def inicializar_sistema_completo(
     archivo_presupuesto: Optional[str] = None,
     año_fiscal: int = 2025,
@@ -43,43 +32,7 @@ def inicializar_sistema_completo(
     dry_run: bool = False,
     db: Session = Depends(get_db)
 ):
-    """
-    **INICIALIZACIÓN COMPLETA DEL SISTEMA ENTERPRISE**
-
-    Ejecuta la inicialización orquestada de todo el sistema:
-
-    1.   **Verificación de Estado**: Analiza el estado actual
-    2.   **Validación de Pre-requisitos**: Valida datos y configuraciones
-    3.   **Importación de Presupuesto**: Importa desde Excel (si se proporciona)
-    4.   **Auto-configuración NIT-Usuario**: Crea asignaciones automáticamente
-    5.   **Vinculación de Facturas**: Vincula facturas existentes con presupuesto
-    6.   **Activación de Workflow**: Activa workflow de aprobación
-    7.   **Reporte Ejecutivo**: Genera reporte completo
-
-    **Características Enterprise:**
-    - Transacciones atómicas (todo o nada)
-    - Rollback automático en errores
-    - Idempotente (se puede ejecutar múltiples veces)
-    - Logging detallado
-    - Dry-run para simulación
-
-    **Parámetros:**
-    - `archivo_presupuesto`: Ruta al Excel de presupuesto (opcional)
-    - `año_fiscal`: Año a procesar (default: 2025)
-    - `responsable_default_id`: ID del usuario por defecto
-    - `ejecutar_vinculacion`: Si debe vincular facturas (default: true)
-    - `ejecutar_workflow`: Si debe activar workflow (default: true)
-    - `dry_run`: Si true, solo simula sin hacer cambios (default: false)
-
-    **Ejemplo de uso:**
-    ```bash
-    # Simular (dry-run)
-    POST /api/v1/automation/inicializar-sistema?dry_run=true
-
-    # Ejecutar completo
-    POST /api/v1/automation/inicializar-sistema?archivo_presupuesto=presupuesto.xlsx
-    ```
-    """
+    """Ejecuta la inicialización orquestada de todo el sistema."""
     from app.services.inicializacion_sistema import InicializacionSistemaService
 
     servicio = InicializacionSistemaService(db)
@@ -105,9 +58,7 @@ def inicializar_sistema_completo(
     return resultado
 
 
-# Esquemas de respuesta
 class EstadisticasAutomatizacion(BaseModel):
-    """Esquema para estadísticas de automatización."""
     facturas_procesadas_hoy: int
     facturas_aprobadas_automaticamente: int
     facturas_en_revision: int
@@ -117,7 +68,6 @@ class EstadisticasAutomatizacion(BaseModel):
 
 
 class ConfiguracionAutomatizacion(BaseModel):
-    """Esquema para configuración de automatización."""
     confianza_minima_aprobacion: float = Field(ge=0.0, le=1.0, default=0.85)
     dias_historico_patron: int = Field(ge=7, le=365, default=90)
     variacion_monto_permitida: float = Field(ge=0.0, le=1.0, default=0.10)
@@ -127,7 +77,6 @@ class ConfiguracionAutomatizacion(BaseModel):
 
 
 class SolicitudProcesamiento(BaseModel):
-    """Esquema para solicitud de procesamiento manual."""
     limite_facturas: int = Field(ge=1, le=100, default=20)
     modo_debug: bool = False
     solo_proveedor_id: Optional[int] = None
@@ -135,7 +84,6 @@ class SolicitudProcesamiento(BaseModel):
 
 
 class ResultadoFacturaAutomatizada(BaseModel):
-    """Esquema para resultado de factura procesada."""
     factura_id: int
     numero_factura: str
     decision: str
@@ -145,48 +93,22 @@ class ResultadoFacturaAutomatizada(BaseModel):
     requiere_accion_manual: bool
 
 
-# Instancias de servicios (se crean al cargar el módulo)
 automation_service = AutomationService()
 notification_service = NotificationService()
 
 
-@router.post("/regenerar-hashes-facturas", summary="🔧 Regenerar Hashes de Facturas")
+@router.post("/regenerar-hashes-facturas", summary="Regenerar Hashes de Facturas")
 async def regenerar_hashes_facturas(
     limite: int = Query(default=1000, ge=1, le=5000, description="Límite de facturas a procesar"),
     db: Session = Depends(get_db)
 ):
-    """
-    **ENDPOINT DE MANTENIMIENTO: Regenerar Hashes de Facturas**
-
-    Regenera los campos concepto_hash y concepto_normalizado para facturas
-    que no los tienen. Estos campos son CRÍTICOS para la comparación automática.
-
-    **¿Por qué es necesario?**
-    - El concepto_hash es usado para encontrar facturas del mes anterior
-    - Sin él, TODAS las facturas van a revisión manual
-    - Las facturas antiguas no tienen estos campos
-
-    **Proceso:**
-    1. Busca facturas con concepto_hash NULL
-    2. Normaliza el concepto (lowercase, sin espacios extras)
-    3. Genera MD5 hash del concepto normalizado
-    4. Actualiza en BD
-
-    **Parámetros:**
-    - limite: Máximo de facturas a procesar (1-5000)
-
-    **Retorna:**
-    - total_procesadas
-    - actualizadas
-    - errores
-    """
+    """Regenera los campos concepto_hash y concepto_normalizado para facturas que no los tienen."""
     try:
         import hashlib
         import re
 
-        logger.info(f"🔧 Iniciando regeneración de hashes de facturas (límite: {limite})")
+        logger.info(f"Iniciando regeneración de hashes de facturas (límite: {limite})")
 
-        # Obtener facturas sin concepto_hash
         facturas_sin_hash = db.query(Factura).filter(
             Factura.concepto_hash.is_(None)
         ).limit(limite).all()
@@ -202,51 +124,42 @@ async def regenerar_hashes_facturas(
                 }
             }
 
-        logger.info(f" Encontradas {len(facturas_sin_hash)} facturas sin concepto_hash")
+        logger.info(f"Encontradas {len(facturas_sin_hash)} facturas sin concepto_hash")
 
         actualizadas = 0
         errores = 0
 
         for factura in facturas_sin_hash:
             try:
-                # Usar concepto_principal (campo correcto en la tabla)
                 concepto = factura.concepto_principal or ""
 
-                # Si no hay concepto_principal, usar descripción de items
                 if not concepto and factura.items:
-                    # Concatenar descripciones de items
                     concepto = " | ".join([item.descripcion for item in factura.items if item.descripcion])
 
-                # Si aún no hay concepto, usar número de factura como fallback
                 if not concepto:
                     concepto = factura.numero_factura or "sin_concepto"
 
-                # Normalizar concepto
                 concepto_normalizado = concepto.lower().strip()
-                concepto_normalizado = re.sub(r'\s+', ' ', concepto_normalizado)  # Espacios múltiples
+                concepto_normalizado = re.sub(r'\s+', ' ', concepto_normalizado)
 
-                # Generar hash MD5
                 concepto_hash = hashlib.md5(concepto_normalizado.encode('utf-8')).hexdigest()
 
-                # Actualizar factura
                 factura.concepto_normalizado = concepto_normalizado
                 factura.concepto_hash = concepto_hash
 
                 actualizadas += 1
 
-                # Commit cada 100 facturas
                 if actualizadas % 100 == 0:
                     db.commit()
-                    logger.info(f"💾 Actualizadas {actualizadas} facturas")
+                    logger.info(f"Actualizadas {actualizadas} facturas")
 
             except Exception as e:
-                logger.error(f"❌ Error procesando factura {factura.id}: {str(e)}", exc_info=True)
+                logger.error(f"Error procesando factura {factura.id}: {str(e)}", exc_info=True)
                 errores += 1
 
-        # Commit final
         db.commit()
 
-        logger.info(f" Regeneración completada: {actualizadas} facturas actualizadas, {errores} errores")
+        logger.info(f"Regeneración completada: {actualizadas} facturas actualizadas, {errores} errores")
 
         return {
             "success": True,
@@ -260,14 +173,14 @@ async def regenerar_hashes_facturas(
 
     except Exception as e:
         db.rollback()
-        logger.error(f"❌ Error crítico regenerando hashes: {str(e)}", exc_info=True)
+        logger.error(f"Error crítico regenerando hashes: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error regenerando hashes: {str(e)}"
         )
 
 
-@router.post("/procesar-workflows-pendientes", summary="🚀 Procesar Workflows Pendientes (Enterprise)")
+@router.post("/procesar-workflows-pendientes", summary="Procesar Workflows Pendientes")
 async def procesar_workflows_pendientes(
     limite: int = Query(default=100, ge=1, le=500, description="Límite de workflows a procesar"),
     solo_estado_recibida: bool = Query(default=True, description="Solo procesar workflows en estado 'recibida'"),
@@ -275,30 +188,7 @@ async def procesar_workflows_pendientes(
     incluir_no_aprobadas: bool = Query(default=True, description="Incluir facturas no aprobadas en búsqueda (para primera ejecución)"),
     db: Session = Depends(get_db)
 ):
-    """
-    **ENDPOINT ENTERPRISE: Procesar Workflows Pendientes**
-
-    Procesa workflows que están en estado "recibida" y ejecuta el análisis
-    de aprobación automática para cada uno.
-
-    **Flujo:**
-    1. Obtiene workflows en estado "recibida"
-    2. Para cada workflow, ejecuta comparación con mes anterior
-    3. Evalúa criterios de aprobación automática
-    4. Sincroniza estados con tabla facturas
-    5. Genera notificaciones
-
-    **Parámetros:**
-    - `limite`: Máximo de workflows a procesar (1-500)
-    - `solo_estado_recibida`: Si true, solo procesa workflows en estado "recibida"
-    - `ejecutar_analisis`: Si true, ejecuta análisis de comparación automática
-
-    **Retorna:**
-    - Total workflows procesados
-    - Aprobados automáticamente
-    - Enviados a revisión
-    - Errores encontrados
-    """
+    """Procesa workflows que están en estado 'recibida' y ejecuta el análisis de aprobación automática."""
     try:
         from app.models.workflow_aprobacion import WorkflowAprobacionFactura, EstadoFacturaWorkflow
         from app.services.workflow_automatico import WorkflowAutomaticoService
@@ -306,9 +196,8 @@ async def procesar_workflows_pendientes(
         from app.crud.factura import find_factura_mes_anterior
         from sqlalchemy import and_
 
-        logger.info(f"🚀 Iniciando procesamiento de workflows pendientes (límite: {limite})")
+        logger.info(f"Iniciando procesamiento de workflows pendientes (límite: {limite})")
 
-        # Obtener workflows pendientes
         query = db.query(WorkflowAprobacionFactura)
 
         if solo_estado_recibida:
@@ -329,13 +218,11 @@ async def procesar_workflows_pendientes(
                 }
             }
 
-        logger.info(f" Encontrados {len(workflows_pendientes)} workflows pendientes")
+        logger.info(f"Encontrados {len(workflows_pendientes)} workflows pendientes")
 
-        # Inicializar servicios
         workflow_service = WorkflowAutomaticoService(db)
         comparador_service = ComparadorItemsService(db) if ejecutar_analisis else None
 
-        # Contadores
         procesados = 0
         aprobados_auto = 0
         en_revision = 0
@@ -346,18 +233,15 @@ async def procesar_workflows_pendientes(
             try:
                 factura = workflow.factura
                 if not factura:
-                    logger.warning(f"⚠️  Workflow {workflow.id} sin factura asociada")
+                    logger.warning(f" Workflow {workflow.id} sin factura asociada")
                     errores += 1
                     continue
 
-                logger.info(f" Procesando workflow {workflow.id} - Factura {factura.numero_factura}")
+                logger.info(f"Procesando workflow {workflow.id} - Factura {factura.numero_factura}")
 
-                # PASO 1: Buscar factura del mes anterior
-                # Si incluir_no_aprobadas=True, buscar manualmente sin filtro de estado
                 factura_anterior = None
 
                 if incluir_no_aprobadas:
-                    # Búsqueda manual sin filtro de estado (para primera ejecución)
                     from dateutil.relativedelta import relativedelta
                     from sqlalchemy import extract, and_
 
@@ -373,7 +257,6 @@ async def procesar_workflows_pendientes(
                         )
                     ).order_by(Factura.fecha_emision.desc()).first()
                 else:
-                    # Búsqueda normal (solo facturas aprobadas)
                     factura_anterior = find_factura_mes_anterior(
                         db=db,
                         proveedor_id=factura.proveedor_id,
@@ -382,7 +265,6 @@ async def procesar_workflows_pendientes(
                         numero_factura=factura.numero_factura
                     )
 
-                # PASO 2: Comparar con mes anterior (si existe)
                 comparacion_mes_anterior = None
                 if factura_anterior:
                     diferencia_monto = abs(float(factura.total_a_pagar or 0) - float(factura_anterior.total_a_pagar or 0))
@@ -397,11 +279,8 @@ async def procesar_workflows_pendientes(
                         'confianza': 0.95 if diferencia_porcentaje <= 5.0 else 0.60
                     }
 
-                    # Actualizar workflow con información de comparación
                     workflow.factura_mes_anterior_id = factura_anterior.id
 
-                    # Calcular porcentaje de similitud (0-100, nunca negativo)
-                    # Si diferencia > 100%, similitud = 0%
                     porcentaje_similitud = max(0, min(100, 100 - diferencia_porcentaje))
                     workflow.porcentaje_similitud = round(porcentaje_similitud, 2)
 
@@ -420,9 +299,7 @@ async def procesar_workflows_pendientes(
                         'confianza': 0.50
                     }
 
-                # PASO 3: Decidir aprobación
                 if comparacion_mes_anterior['decision_sugerida'] == 'aprobar_auto':
-                    # APROBAR AUTOMÁTICAMENTE
                     workflow.estado = EstadoFacturaWorkflow.APROBADA_AUTO
                     workflow.tipo_aprobacion = TipoAprobacion.AUTOMATICA
                     workflow.aprobada = True
@@ -430,16 +307,13 @@ async def procesar_workflows_pendientes(
                     workflow.fecha_aprobacion = datetime.utcnow()
                     workflow.observaciones_aprobacion = f'Aprobada automáticamente: {comparacion_mes_anterior["razon"]}'
 
-                    # Sincronizar con factura
                     workflow_service._sincronizar_estado_factura(workflow)
 
-                    # ENVIAR NOTIFICACIÓN DE APROBACIÓN AUTOMÁTICA ✨
                     try:
                         from app.services.automation.notification_service import NotificationService
 
                         notification_service = NotificationService()
 
-                        # Extraer información del patrón detectado
                         patron_detectado = "Mes sobre mes"
                         factura_referencia = None
                         variacion_monto = 0.0
@@ -450,7 +324,6 @@ async def procesar_workflows_pendientes(
                             if monto_anterior:
                                 factura_referencia = f"Factura mes anterior: ${monto_anterior:,.2f}"
 
-                        # Obtener criterios cumplidos para la notificación
                         criterios_cumplidos = [
                             f"Variación de monto: {variacion_monto:.2f}%",
                             "Factura idéntica al mes anterior",
@@ -466,9 +339,9 @@ async def procesar_workflows_pendientes(
                             factura_referencia=factura_referencia,
                             variacion_monto=variacion_monto
                         )
-                        logger.info(f"  📧 Notificación de aprobación automática enviada para factura {factura.numero_factura}")
+                        logger.info(f"  Notificación de aprobación automática enviada para factura {factura.numero_factura}")
                     except Exception as e:
-                        logger.error(f"  ❌ Error enviando notificación de aprobación automática: {str(e)}")
+                        logger.error(f"   Error enviando notificación de aprobación automática: {str(e)}")
 
                     aprobados_auto += 1
                     logger.info(f"   Workflow {workflow.id} APROBADO AUTOMÁTICAMENTE")
@@ -490,7 +363,7 @@ async def procesar_workflows_pendientes(
                     workflow_service._sincronizar_estado_factura(workflow)
 
                     en_revision += 1
-                    logger.info(f"  ⚠️  Workflow {workflow.id} enviado a REVISIÓN")
+                    logger.info(f"   Workflow {workflow.id} enviado a REVISIÓN")
 
                     detalles.append({
                         'workflow_id': workflow.id,
@@ -509,7 +382,7 @@ async def procesar_workflows_pendientes(
                     logger.info(f"💾 Guardados {procesados} workflows procesados")
 
             except Exception as e:
-                logger.error(f"❌ Error procesando workflow {workflow.id}: {str(e)}", exc_info=True)
+                logger.error(f" Error procesando workflow {workflow.id}: {str(e)}", exc_info=True)
                 errores += 1
 
         # Commit final
@@ -533,7 +406,7 @@ async def procesar_workflows_pendientes(
 
     except Exception as e:
         db.rollback()
-        logger.error(f"❌ Error crítico en procesamiento de workflows: {str(e)}", exc_info=True)
+        logger.error(f" Error crítico en procesamiento de workflows: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Error en el procesamiento de workflows: {str(e)}"
@@ -1109,10 +982,12 @@ async def enviar_notificaciones_procesamiento(db: Session, resultado_procesamien
         logger.error(f"Error enviando notificaciones en segundo plano: {str(e)}")
 
 
-# ==================== DEBUG ENDPOINT ====================
+# ==================== DEBUG ENDPOINTS (DESARROLLO) ====================
+# NOTA: Estos endpoints están deshabilitados en producción
+# Para habilitarlos temporalmente, descomentar los decoradores @router
 
-@router.get("/debug/conteos-workflows", summary="🔧 Debug: Conteos de Workflows y Facturas")
-def debug_conteos_workflows(db: Session = Depends(get_db)):
+# @router.get("/debug/conteos-workflows", summary="🔧 Debug: Conteos de Workflows y Facturas")
+def _debug_conteos_workflows(db: Session = Depends(get_db)):
     """
     Endpoint de debug para verificar inconsistencias entre workflows y facturas.
     """
@@ -1168,8 +1043,8 @@ def debug_conteos_workflows(db: Session = Depends(get_db)):
     }
 
 
-@router.post("/resincronizar-estados-facturas", summary=" Re-sincronizar Estados de Facturas")
-def resincronizar_estados_facturas(db: Session = Depends(get_db)):
+# @router.post("/resincronizar-estados-facturas", summary=" Re-sincronizar Estados de Facturas")
+def _resincronizar_estados_facturas(db: Session = Depends(get_db)):
     """
     Re-sincroniza el estado de TODAS las facturas basándose en TODOS sus workflows.
 
@@ -1244,8 +1119,8 @@ def resincronizar_estados_facturas(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/debug/analizar-workflows-por-factura", summary="🔍 Analizar Distribución de Workflows por Factura")
-def analizar_workflows_por_factura(db: Session = Depends(get_db)):
+# @router.get("/debug/analizar-workflows-por-factura", summary="🔍 Analizar Distribución de Workflows por Factura")
+def _analizar_workflows_por_factura(db: Session = Depends(get_db)):
     """
     Analiza por qué 87 workflows aprobados resultan en solo 44 facturas aprobadas.
 
@@ -1435,7 +1310,7 @@ async def procesar_facturas_nuevas(
         )
 
 
-@router.post("/notificar-aprobaciones-retroactivas", summary="📧 Notificar Aprobaciones Automáticas Retroactivas")
+@router.post("/notificar-aprobaciones-retroactivas", summary="Notificar Aprobaciones Automáticas Retroactivas")
 def notificar_aprobaciones_retroactivas(
     limite: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db)
@@ -1486,7 +1361,7 @@ def notificar_aprobaciones_retroactivas(
 
             factura = workflow.factura
             if not factura:
-                logger.warning(f"  ⚠️  Workflow {workflow.id} sin factura asociada")
+                logger.warning(f"   Workflow {workflow.id} sin factura asociada")
                 errores += 1
                 continue
 
@@ -1540,11 +1415,11 @@ def notificar_aprobaciones_retroactivas(
                 })
             else:
                 errores += 1
-                logger.error(f"  ❌ Error enviando notificación para workflow {workflow.id}")
+                logger.error(f"   Error enviando notificación para workflow {workflow.id}")
 
         except Exception as e:
             errores += 1
-            logger.error(f"  ❌ Error procesando workflow {workflow.id}: {str(e)}")
+            logger.error(f"   Error procesando workflow {workflow.id}: {str(e)}")
 
     db.commit()
 

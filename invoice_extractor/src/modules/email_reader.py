@@ -250,6 +250,56 @@ class EmailReader:
         
         return filename
 
+    def _extract_cufe_from_xml_quick(self, content: bytes) -> Optional[str]:
+        """
+        Extrae el CUFE del XML sin parseo completo (método rápido).
+
+        El CUFE es el identificador único de la factura electrónica (UUID DIAN).
+        Se encuentra en el tag <cbc:UUID> del XML.
+
+        Args:
+            content: Contenido del archivo XML en bytes
+
+        Returns:
+            CUFE normalizado (lowercase, sin guiones) o None si no se encuentra
+
+        Ejemplos:
+            <cbc:UUID>08001365050512500067543abc123def456</cbc:UUID>
+            Retorna: "08001365050512500067543abc123def456"
+        """
+        try:
+            # Decodificar contenido a string
+            content_str = content.decode('utf-8', errors='ignore')
+
+            # Buscar tag <cbc:UUID> con regex
+            # Patrón: <cbc:UUID [atributos opcionales]>VALOR</cbc:UUID>
+            import re
+            pattern = r'<cbc:UUID[^>]*>([a-f0-9\-]+)</cbc:UUID>'
+            match = re.search(pattern, content_str, re.IGNORECASE)
+
+            if match:
+                # Normalizar CUFE: lowercase, sin guiones
+                cufe_raw = match.group(1)
+                cufe_normalized = cufe_raw.replace('-', '').lower().strip()
+
+                logger.debug(
+                    "✅ CUFE extraído rápidamente: %s... (longitud: %d)",
+                    cufe_normalized[:20], len(cufe_normalized)
+                )
+
+                return cufe_normalized
+
+            # No se encontró tag UUID
+            logger.warning("⚠️ No se encontró tag <cbc:UUID> en XML")
+            return None
+
+        except UnicodeDecodeError as e:
+            logger.warning("⚠️ Error decodificando XML como UTF-8: %s", e)
+            return None
+        except Exception as e:
+            logger.error("❌ Error extrayendo CUFE del XML: %s", e, exc_info=True)
+            return None
+
     def download_emails_and_attachments(
         self,
         nit: str,
@@ -440,7 +490,19 @@ class EmailReader:
             if lname.endswith(".zip"):
                 saved.extend(self._handle_zip(content, nit, message_id, safe_name))
             elif lname.endswith((".pdf", ".xml")):
-                path = save_attachment(content, safe_name, nit, message_id)
+                # === EXTRACCIÓN DE CUFE (2025-12-27 - NOMENCLATURA ESTANDARIZADA) ===
+                # Si es XML, extraer CUFE rápidamente para renombrar con nomenclatura estándar
+                cufe = None
+                if lname.endswith(".xml"):
+                    cufe = self._extract_cufe_from_xml_quick(content)
+                    if cufe:
+                        logger.info(
+                            "✅ CUFE extraído para nomenclatura estándar: %s...",
+                            cufe[:20]
+                        )
+
+                # Guardar con nomenclatura estándar (pasando CUFE si se extrajo)
+                path = save_attachment(content, safe_name, nit, message_id, cufe=cufe)
                 if path:  # ignorar duplicados
                     logger.info("Saved %s", path)
                     saved.append(str(path))
@@ -453,64 +515,92 @@ class EmailReader:
 
     def _handle_zip(self, zip_bytes: bytes, nit: str, message_id: str, zip_name: str) -> List[str]:
         """
-        Maneja archivos ZIP con validación de seguridad.
-        
+        Maneja archivos ZIP con validación de seguridad y procesamiento por lotes.
+
+        ESTRATEGIA (2025-12-27 - PROCESAMIENTO POR LOTES):
+        ===================================================
+        1. Extraer TODOS los archivos del ZIP en memoria
+        2. Identificar el XML y extraer el CUFE (fuente de verdad)
+        3. Usar ese CUFE para guardar AMBOS archivos (XML + PDF) con nomenclatura estándar
+        4. Garantizar atomicidad: Si hay PDF + XML, ambos se guardan con el mismo CUFE
+
         Args:
             zip_bytes: Contenido del ZIP
             nit: NIT del proveedor
             message_id: ID del mensaje
             zip_name: Nombre del archivo ZIP
-            
+
         Returns:
             List[str]: Rutas de archivos extraídos
         """
         saved: List[str] = []
-        
+
         try:
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                # FASE 1: Extraer TODOS los archivos del ZIP en memoria
+                archivos_zip = {}  # {nombre_sanitizado: contenido_bytes}
+
                 for inner in zf.infolist():
-                    # Sanitizar nombre del archivo interno
                     safe_inner_name = self._sanitize_filename(inner.filename)
-                    
+
                     if not safe_inner_name.lower().endswith((".pdf", ".xml")):
                         logger.debug("Ignored file in ZIP: %s", safe_inner_name)
                         continue
-                    
+
                     # Leer contenido
                     try:
                         data = zf.read(inner)
                     except Exception as exc:
                         logger.warning(
-                            "Error reading %s from ZIP %s: %s", 
+                            "Error reading %s from ZIP %s: %s",
                             safe_inner_name, zip_name, exc
                         )
                         continue
-                    
+
                     # Validar contenido extraído
                     is_valid, rejection_reason = self._validate_file_type(data, safe_inner_name)
-                    
+
                     if not is_valid:
                         logger.warning(
-                            "Archivo en ZIP rechazado '%s' (ZIP: %s): %s", 
+                            "Archivo en ZIP rechazado '%s' (ZIP: %s): %s",
                             safe_inner_name, zip_name, rejection_reason
                         )
                         self._register_rejection(f"En ZIP: {rejection_reason}")
                         continue
-                    
-                    # Guardar archivo
-                    p = save_attachment(data, safe_inner_name, nit, message_id)
+
+                    # Guardar en memoria para procesamiento por lotes
+                    archivos_zip[safe_inner_name] = data
+
+                # FASE 2: Identificar XML y extraer CUFE (fuente de verdad)
+                cufe_extraido = None
+
+                for nombre, contenido in archivos_zip.items():
+                    if nombre.lower().endswith(".xml"):
+                        cufe_extraido = self._extract_cufe_from_xml_quick(contenido)
+                        if cufe_extraido:
+                            logger.info(
+                                "✅ CUFE extraído de XML en ZIP: %s...",
+                                cufe_extraido[:20]
+                            )
+                            break  # Usar el primer XML con CUFE válido
+
+                # FASE 3: Guardar TODOS los archivos con el mismo CUFE
+                for nombre, contenido in archivos_zip.items():
+                    # Usar el CUFE extraído del XML para TODOS los archivos del ZIP
+                    # (incluyendo el PDF hermano)
+                    p = save_attachment(contenido, nombre, nit, message_id, cufe=cufe_extraido)
                     if p:  # ignorar duplicados
                         logger.info("Extracted %s from ZIP %s", p, zip_name)
                         saved.append(str(p))
                         self.stats['archivos_guardados'] += 1
-                        
+
         except zipfile.BadZipFile as exc:
             logger.error("Corrupt ZIP in message %s (nombre: %s): %s", message_id, zip_name, exc)
             self._register_rejection("ZIP corrupto")
         except Exception as exc:
             logger.error("Error processing ZIP %s: %s", zip_name, exc)
             self._register_rejection(f"Error procesando ZIP: {type(exc).__name__}")
-        
+
         return saved
 
     def _register_rejection(self, reason: str):

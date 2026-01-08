@@ -1,7 +1,7 @@
 """
 Health check endpoint para monitoreo de integridad del sistema
 
-NIVEL EMPRESARIAL: Detecta inconsistencias antes de que causen problemas
+ Detecta inconsistencias antes de que causen problemas
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session

@@ -85,9 +85,7 @@ def detener_scheduler_notificaciones():
         logger.info("Scheduler de notificaciones detenido")
 
 
-# ============================================================================
 # FUNCIONES DE EJECUCIÓN DE JOBS
-# ============================================================================
 
 def _ejecutar_resumen_semanal():
     """Ejecuta el envío del resumen semanal."""
@@ -130,9 +128,7 @@ def _ejecutar_alertas_urgentes():
         db.close()
 
 
-# ============================================================================
 # FUNCIONES PARA TESTING MANUAL
-# ============================================================================
 
 def ejecutar_resumen_semanal_manual():
     """Ejecuta resumen semanal manualmente (para testing)."""

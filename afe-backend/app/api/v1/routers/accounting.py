@@ -5,8 +5,6 @@ Router para operaciones de contabilidad.
 Endpoints accesibles solo para usuarios con rol 'contador'.
 Gestiona operaciones específicas del departamento de contabilidad.
 
-
-Fecha: 2025-11-18
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -288,7 +286,7 @@ async def devolver_factura(
     db: Session = Depends(get_db)
 ):
     """
-    Endpoint profesional para devolver facturas.
+    Endpoint para devolver facturas.
 
     Enterprise features:
     - Validación de estados
@@ -416,7 +414,7 @@ async def devolver_factura(
 
             email_service.send_email(
                 to_email=email_proveedor,
-                subject=f"⚠️ Factura {numero_factura} - Información adicional requerida",
+                subject=f"Factura {numero_factura} - Información adicional requerida",
                 body_html=html_content
             )
 
@@ -499,18 +497,18 @@ async def devolver_factura(
                         destinatarios_notificados.append(email_responsable)
                         notificaciones_exitosas += 1
                         logger.info(
-                            f"✅ Email enviado exitosamente a {nombre_responsable} ({email_responsable})",
+                            f"Email enviado exitosamente a {nombre_responsable} ({email_responsable})",
                             extra={"factura_id": factura_id, "responsable_email": email_responsable}
                         )
                     else:
                         logger.error(
-                            f"❌ Error enviando email a {nombre_responsable}. Error: {result.get('error', 'Sin detalles')}",
+                            f" Error enviando email a {nombre_responsable}. Error: {result.get('error', 'Sin detalles')}",
                             extra={"factura_id": factura_id, "result": result}
                         )
 
                 except Exception as e:
                     logger.error(
-                        f"❌ Excepción enviando email a {nombre_responsable} ({email_responsable}): {str(e)}",
+                        f" Excepción enviando email a {nombre_responsable} ({email_responsable}): {str(e)}",
                         exc_info=True,
                         extra={"factura_id": factura_id}
                     )

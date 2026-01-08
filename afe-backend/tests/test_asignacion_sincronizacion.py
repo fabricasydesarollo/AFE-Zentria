@@ -1,7 +1,7 @@
 """
 Tests de integración para sincronización Asignaciones ↔ Facturas
 
-NIVEL EMPRESARIAL: Garantiza que la sincronización funcione correctamente
+: Garantiza que la sincronización funcione correctamente
 """
 import pytest
 from sqlalchemy.orm import Session

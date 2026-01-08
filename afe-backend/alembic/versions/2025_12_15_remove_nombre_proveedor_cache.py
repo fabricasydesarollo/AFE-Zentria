@@ -20,10 +20,10 @@ PROBLEMA ACTUAL:
 SOLUCIÓN ARQUITECTÓNICA:
 Eliminar el campo cache y usar JOIN con tabla proveedores para obtener
 razon_social en tiempo real. Esto garantiza:
-- ✅ Siempre datos actualizados
-- ✅ No duplicación de datos
-- ✅ No código de sincronización
-- ✅ Arquitectura limpia (SSOT)
+- Siempre datos actualizados
+- No duplicación de datos
+- No código de sincronización
+- Arquitectura limpia (SSOT)
 
 IMPACTO:
 - Modelo SQLAlchemy: Agregar relación con Proveedor (eager loading)

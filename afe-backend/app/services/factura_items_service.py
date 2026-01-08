@@ -5,7 +5,7 @@ Este servicio maneja la creación, actualización y consulta de items
 individuales de facturas.
 
 
-Fecha: 2025-10-09
+
 """
 
 import logging

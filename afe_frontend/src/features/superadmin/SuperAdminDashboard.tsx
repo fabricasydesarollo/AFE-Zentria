@@ -66,7 +66,6 @@ interface SuperAdminDashboardData {
   usuarios_por_rol: Record<string, number>;
   facturas_ultimos_30_dias: number;
   facturas_mes_actual: number;
-  facturas_cuarentena: number; // MULTI-TENANT 2025-12-14
   grupos_mas_activos: GrupoStats[];
   actividad_reciente: ActividadReciente[];
 }

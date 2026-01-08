@@ -1,8 +1,4 @@
-"""
-Servicio de Notificaciones por Email.
-
-Envía notificaciones relacionadas con el workflow de aprobación de facturas.
-"""
+"""Servicio de notificaciones por email para workflow de aprobación de facturas."""
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -16,13 +12,10 @@ from app.core.config import settings
 
 
 class NotificacionService:
-    """
-    Servicio para envío de notificaciones por email.
-    """
+    """Servicio para envío de notificaciones por email."""
 
     def __init__(self, db: Session):
         self.db = db
-        # Configuración SMTP (ajustar según tu proveedor)
         self.smtp_server = getattr(settings, 'SMTP_SERVER', 'smtp.gmail.com')
         self.smtp_port = getattr(settings, 'SMTP_PORT', 587)
         self.smtp_user = getattr(settings, 'SMTP_USER', None)
@@ -30,15 +23,7 @@ class NotificacionService:
         self.from_email = getattr(settings, 'FROM_EMAIL', 'noreply@afe.com')
 
     def enviar_notificacion(self, notificacion_id: int) -> Dict[str, Any]:
-        """
-        Envía una notificación por email.
-
-        Args:
-            notificacion_id: ID de la notificación a enviar
-
-        Returns:
-            Dict con resultado del envío
-        """
+        """Envía una notificación por email."""
         notif = self.db.query(NotificacionWorkflow).filter(
             NotificacionWorkflow.id == notificacion_id
         ).first()
@@ -50,7 +35,6 @@ class NotificacionService:
             return {"mensaje": "Notificación ya fue enviada", "fecha_envio": notif.fecha_envio}
 
         try:
-            # Obtener destinatarios reales
             destinatarios = self._obtener_destinatarios(notif)
 
             if not destinatarios:
@@ -59,17 +43,14 @@ class NotificacionService:
                 self.db.commit()
                 return {"error": "No hay destinatarios para enviar"}
 
-            # Crear mensaje
             mensaje = self._crear_mensaje_email(
                 destinatarios=destinatarios,
                 asunto=notif.asunto,
                 cuerpo=notif.cuerpo
             )
 
-            # Enviar
             self._enviar_email(mensaje, destinatarios)
 
-            # Actualizar registro
             notif.enviada = True
             notif.fecha_envio = datetime.now()
             notif.intentos_envio += 1
@@ -85,7 +66,6 @@ class NotificacionService:
             }
 
         except Exception as e:
-            # Registrar error
             notif.error = str(e)
             notif.intentos_envio += 1
             self.db.commit()
@@ -97,49 +77,35 @@ class NotificacionService:
             }
 
     def _obtener_destinatarios(self, notif: NotificacionWorkflow) -> List[str]:
-        """
-        Obtiene la lista de emails destinatarios según el tipo de notificación.
-
-        Enterprise Pattern: Routing robusto con validaciones defensivas.
-        - Los valores de tipo deben coincidir exactamente con TipoNotificacion enum
-        - Se valida que workflow.responsable exista antes de acceder
-        - Se elimina duplicados al final
-        """
+        """Obtiene la lista de emails destinatarios según el tipo de notificación."""
         import logging
         logger = logging.getLogger(__name__)
 
         destinatarios = []
         workflow = notif.workflow
 
-        # Validación defensiva: Si workflow no existe, retornar vacío
         if not workflow:
             logger.warning(f"NotificacionWorkflow {notif.id}: workflow es None")
             return []
 
-        # Si ya tiene destinatarios en JSON, usarlos (bypass automático)
+        # Si ya tiene destinatarios en JSON, usarlos
         if notif.destinatarios and isinstance(notif.destinatarios, list) and len(notif.destinatarios) > 0:
             logger.debug(f"Usando destinatarios predefinidos para notificación {notif.id}")
             return notif.destinatarios
 
-        # Log del tipo de notificación para debugging
         logger.debug(f"Procesando notificación {notif.id}: tipo={notif.tipo.value}")
 
-        # Según el tipo de notificación, agregar destinatarios
-        # ⚠️ CRÍTICO: Usar valores EXACTOS del enum (minúsculas)
         if notif.tipo.value in ['factura_recibida', 'pendiente_revision', 'recordatorio']:
-            # Enviar al usuario asignado
             if workflow.responsable and hasattr(workflow.responsable, 'email') and workflow.responsable.email:
                 destinatarios.append(workflow.responsable.email)
                 logger.debug(f"Agregado responsable: {workflow.responsable.email}")
 
         # Notificaciones de aprobación/rechazo: ir a responsable + contabilidad
         if notif.tipo.value in ['factura_aprobada', 'factura_rechazada']:
-            # 1. Enviar al usuario que actuó
             if workflow.responsable and hasattr(workflow.responsable, 'email') and workflow.responsable.email:
                 destinatarios.append(workflow.responsable.email)
                 logger.debug(f"Agregado responsable para {notif.tipo.value}: {workflow.responsable.email}")
 
-            # 2. Agregar email de contabilidad (equipo que procesará el pago)
             email_contabilidad = getattr(settings, 'EMAIL_CONTABILIDAD', None)
             if email_contabilidad:
                 destinatarios.append(email_contabilidad)
@@ -157,7 +123,6 @@ class NotificacionService:
                 if isinstance(asignacion.emails_notificacion, list):
                     destinatarios.extend(asignacion.emails_notificacion)
 
-        # Eliminar duplicados
         return list(set(destinatarios))
 
     def _crear_mensaje_email(
@@ -172,7 +137,6 @@ class NotificacionService:
         mensaje['From'] = self.from_email
         mensaje['To'] = ', '.join(destinatarios)
 
-        # Crear versión HTML del cuerpo
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6;">
@@ -192,7 +156,6 @@ class NotificacionService:
         </html>
         """
 
-        # Adjuntar versión texto plano y HTML
         parte_texto = MIMEText(cuerpo, 'plain', 'utf-8')
         parte_html = MIMEText(html, 'html', 'utf-8')
 
@@ -215,15 +178,7 @@ class NotificacionService:
             server.send_message(mensaje)
 
     def enviar_notificaciones_pendientes(self, limite: int = 50) -> Dict[str, Any]:
-        """
-        Envía las notificaciones pendientes en lote.
-
-        Args:
-            limite: Máximo de notificaciones a procesar
-
-        Returns:
-            Dict con estadísticas de envío
-        """
+        """Envía las notificaciones pendientes en lote."""
         notificaciones = self.db.query(NotificacionWorkflow).filter(
             NotificacionWorkflow.enviada == False
         ).limit(limite).all()
@@ -252,15 +207,7 @@ class NotificacionService:
         return resultados
 
     def enviar_recordatorios_facturas_pendientes(self, dias_pendiente: int = 3) -> Dict[str, Any]:
-        """
-        Envía recordatorios para facturas que llevan más de X días pendientes de revisión.
-
-        Args:
-            dias_pendiente: Días que debe estar pendiente para enviar recordatorio
-
-        Returns:
-            Dict con estadísticas
-        """
+        """Envía recordatorios para facturas que llevan más de X días pendientes de revisión."""
         from datetime import timedelta
         from app.models.workflow_aprobacion import EstadoFacturaWorkflow, TipoNotificacion
 
@@ -284,7 +231,6 @@ class NotificacionService:
             if ultimo_recordatorio:
                 continue
 
-            # Crear recordatorio
             from app.services.workflow_automatico import WorkflowAutomaticoService
 
             servicio = WorkflowAutomaticoService(self.db)

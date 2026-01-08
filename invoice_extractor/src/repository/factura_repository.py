@@ -21,17 +21,18 @@ class FacturaRepository:
             INSERT INTO facturas (
                 numero_factura, cufe, fecha_emision, fecha_vencimiento,
                 proveedor_id, subtotal, iva, retenciones, total_a_pagar,
-                confianza_automatica, motivo_decision, estado
+                confianza_automatica, motivo_decision, estado, pdf_filename
             ) VALUES (
                 :numero_factura, :cufe, :fecha_emision, :fecha_vencimiento,
                 :proveedor_id, :subtotal, :iva, :retenciones, :total_a_pagar,
-                :confianza_automatica, :motivo_decision, :estado
+                :confianza_automatica, :motivo_decision, :estado, :pdf_filename
             )
             ON DUPLICATE KEY UPDATE
                 retenciones = VALUES(retenciones),
                 total_a_pagar = VALUES(total_a_pagar),
                 confianza_automatica = VALUES(confianza_automatica),
-                motivo_decision = VALUES(motivo_decision)
+                motivo_decision = VALUES(motivo_decision),
+                pdf_filename = VALUES(pdf_filename)
         """)
         result = self.session.execute(insert_sql, factura)
 

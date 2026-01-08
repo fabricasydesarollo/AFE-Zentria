@@ -1,10 +1,5 @@
 # app/services/email_notifications.py
-"""
-Servicio de notificaciones por email para el sistema AFE.
-
-Proporciona funciones de alto nivel para enviar notificaciones
-usando las plantillas HTML predefinidas.
-"""
+"""Servicio de notificaciones por email para el sistema AFE."""
 
 import logging
 from typing import Dict, Any, Optional
@@ -29,15 +24,7 @@ _jinja_env = Environment(
 
 
 def _load_template(template_name: str):
-    """
-    Carga una plantilla Jinja2 desde el sistema de archivos.
-
-    Args:
-        template_name: Nombre del archivo de plantilla (ej: 'factura_aprobada.html')
-
-    Returns:
-        jinja2.Template: Plantilla compilada
-    """
+    """Carga una plantilla Jinja2 desde el sistema de archivos."""
     try:
         return _jinja_env.get_template(template_name)
     except Exception as e:
@@ -46,22 +33,7 @@ def _load_template(template_name: str):
 
 
 def _render_template(template, **kwargs) -> str:
-    """
-    Renderiza una plantilla Jinja2 con las variables proporcionadas.
-
-    Procesa correctamente:
-    - Variables: {{variable}}
-    - Condicionales: {% if condition %} ... {% endif %}
-    - Comentarios: {# comentario #}
-    - Filtros: {{variable|filter}}
-
-    Args:
-        template: Plantilla compilada de Jinja2
-        **kwargs: Variables para reemplazar en la plantilla
-
-    Returns:
-        str: HTML renderizado
-    """
+    """Renderiza una plantilla Jinja2 con las variables proporcionadas."""
     try:
         return template.render(**kwargs)
     except Exception as e:
@@ -81,24 +53,7 @@ def enviar_notificacion_factura_aprobada(
     url_factura: Optional[str] = None,
     observaciones: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
-    Envía notificación de factura aprobada.
-
-    Args:
-        email_responsable: Email del usuario
-        nombre_responsable: Nombre del usuario
-        numero_factura: Número de la factura
-        nombre_proveedor: Nombre del proveedor
-        nit_proveedor: NIT del proveedor
-        monto_factura: Monto formateado (ej: "$1,000,000 COP")
-        aprobado_por: Nombre de quien aprobó
-        fecha_aprobacion: Fecha de aprobación (default: ahora)
-        url_factura: URL para acceder a la factura en el dashboard
-        observaciones: Observaciones adicionales sobre la aprobación
-
-    Returns:
-        Dict con resultado del envío
-    """
+    """Envía notificación de factura aprobada."""
     if not fecha_aprobacion:
         fecha_aprobacion = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -140,25 +95,7 @@ def enviar_notificacion_factura_rechazada(
     url_factura: Optional[str] = None,
     observaciones: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
-    Envía notificación de factura rechazada.
-
-    Args:
-        email_responsable: Email del usuario
-        nombre_responsable: Nombre del usuario
-        numero_factura: Número de la factura
-        nombre_proveedor: Nombre del proveedor
-        nit_proveedor: NIT del proveedor
-        monto_factura: Monto formateado
-        rechazado_por: Nombre de quien rechazó
-        motivo_rechazo: Motivo del rechazo
-        fecha_rechazo: Fecha de rechazo (default: ahora)
-        url_factura: URL para acceder a la factura en el dashboard
-        observaciones: Observaciones adicionales sobre el rechazo
-
-    Returns:
-        Dict con resultado del envío
-    """
+    """Envía notificación de factura rechazada."""
     if not fecha_rechazo:
         fecha_rechazo = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -198,24 +135,7 @@ def enviar_notificacion_factura_pendiente(
     dias_pendiente: int,
     link_sistema: str
 ) -> Dict[str, Any]:
-    """
-    Envía notificación de factura pendiente de aprobación.
-
-    Args:
-        email_responsable: Email del usuario
-        nombre_responsable: Nombre del usuario
-        numero_factura: Número de la factura
-        nombre_proveedor: Nombre del proveedor
-        nit_proveedor: NIT del proveedor
-        monto_factura: Monto formateado
-        fecha_recepcion: Fecha de recepción
-        centro_costos: Centro de costos
-        dias_pendiente: Días que lleva pendiente
-        link_sistema: Link al sistema para revisar
-
-    Returns:
-        Dict con resultado del envío
-    """
+    """Envía notificación de factura pendiente de aprobación."""
     template = _load_template("factura_pendiente.html")
     html_body = _render_template(
         template,
@@ -245,18 +165,7 @@ def enviar_codigo_2fa(
     codigo_2fa: str,
     minutos_validez: int = 10
 ) -> Dict[str, Any]:
-    """
-    Envía código de verificación 2FA.
-
-    Args:
-        email_usuario: Email del usuario
-        nombre_usuario: Nombre del usuario
-        codigo_2fa: Código de 6 dígitos
-        minutos_validez: Minutos de validez del código
-
-    Returns:
-        Dict con resultado del envío
-    """
+    """Envía código de verificación 2FA."""
     fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     template = _load_template("codigo_2fa.html")
@@ -284,19 +193,7 @@ def enviar_recuperacion_password(
     minutos_validez: int = 30,
     ip_address: str = "No disponible"
 ) -> Dict[str, Any]:
-    """
-    Envía enlace de recuperación de contraseña.
-
-    Args:
-        email_usuario: Email del usuario
-        nombre_usuario: Nombre del usuario
-        link_recuperacion: URL de recuperación
-        minutos_validez: Minutos de validez del enlace
-        ip_address: IP desde donde se solicitó
-
-    Returns:
-        Dict con resultado del envío
-    """
+    """Envía enlace de recuperación de contraseña."""
     fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     template = _load_template("recuperacion_password.html")

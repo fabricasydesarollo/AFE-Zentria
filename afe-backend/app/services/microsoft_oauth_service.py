@@ -90,7 +90,7 @@ class MicrosoftOAuthService:
         if "error" in result:
             error_msg = result.get('error_description', result.get('error', 'Unknown error'))
             correlation_id = result.get('correlation_id', 'No correlation ID')
-            print(f"   ❌ Error MSAL: {error_msg}")
+            print(f"    Error MSAL: {error_msg}")
             print(f"   Correlation ID: {correlation_id}")
             print(f"   Error completo: {result}")
 
@@ -99,7 +99,7 @@ class MicrosoftOAuthService:
                 detail=f"Microsoft OAuth Error: {error_msg}. Correlation ID: {correlation_id}"
             )
 
-        print(f"   ✅ Token obtenido exitosamente")
+        print(f"   Token obtenido exitosamente")
         return result
 
     def get_user_info(self, access_token: str) -> Dict[str, Any]:

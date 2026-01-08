@@ -4,8 +4,7 @@ Utilidades profesionales para manejo de fechas y períodos.
 Módulo de uso empresarial para operaciones comunes con fechas.
 Centralizado para evitar redundancia.
 
-Nivel: Fortune 500 Enterprise
-Autor:  Backend Development Team
+
 """
 
 from datetime import datetime, date

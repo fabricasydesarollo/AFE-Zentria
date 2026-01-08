@@ -8,8 +8,7 @@ Tests de integración para:
 - Soft delete
 - Control de acceso
 
-Autor: Sistema AFE Backend
-Fecha: 2025-12-03
+
 """
 import pytest
 from fastapi.testclient import TestClient

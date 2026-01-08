@@ -101,10 +101,29 @@ class InvoiceParserFacade:
             # IMPORTANTE: El total a pagar SIEMPRE es el valor extraído, nunca calculado
             total_final = total_oficial if total_oficial is not None else Decimal("0.0")
 
-            # === AUDITORÍA DE PAYABLE (v5.1.1 - CAMBIO CRÍTICO 2025-11-23) ===
-            # Ya NO se aplican correcciones automáticas.
-            # Solo se registra información para auditoría.
-            # PayableAmount del XML es la FUENTE DE VERDAD absoluta.
+            # === CORRECCIÓN CRÍTICA (2025-12-22): RESTAR RETENCIONES ===
+            # PROBLEMA ORIGINAL: PayableAmount del XML NO incluye descuento de retenciones
+            # SOLUCIÓN: Total a Pagar Real = PayableAmount - Retenciones
+            #
+            # Contexto Empresarial Colombiano:
+            # - PayableAmount en XML = Subtotal + IVA (Total Bruto)
+            # - Retenciones (ReteICA, Retefuente, ReteIVA) se RESTAN del pago
+            # - Total a Pagar REAL = Total Bruto - Retenciones
+            #
+            # Ejemplo Real (Factura KION):
+            # - Subtotal: $86,420,243.28
+            # - IVA: $16,460,998.72
+            # - Total Bruto (PayableAmount XML): $102,881,242.00
+            # - Retenciones: $4,310,724.05 (Retefuente + ReteICA)
+            # - Total a Pagar REAL: $98,570,517.95 ✅
+
+            total_final_corregido = total_final - retenciones
+
+            logger.info(
+                f"Total a pagar calculado: PayableAmount={total_final} - Retenciones={retenciones} = {total_final_corregido}"
+            )
+
+            # === AUDITORÍA DE PAYABLE (REGISTRAR INFORMACIÓN) ===
             correccion_payable = self.monetary_validator.detect_and_correct_payable_amount(
                 subtotal=subtotal,
                 iva=iva,
@@ -112,8 +131,53 @@ class InvoiceParserFacade:
                 payable=total_final
             )
 
-            # PayableAmount NUNCA se modifica
-            total_final_corregido = correccion_payable['payable_corregido']
+            # === NOMENCLATURA ESTÁNDAR (2025-12-27 - ARQUITECTURA PROFESIONAL) ===
+            # Con la nueva arquitectura de nomenclatura estandarizada por CUFE:
+            # - XMLs se guardan como: {CUFE}.xml
+            # - PDFs se guardan como: {CUFE}.pdf
+            # - Lookup es O(1) directo, sin búsqueda necesaria
+            #
+            # IMPORTANTE: Esta implementación asume que attachments.py ya implementó
+            # la nomenclatura estándar. Si el PDF se guardó con nomenclatura antigua,
+            # el campo pdf_filename será None y invoice_pdf_service usará fallbacks.
+
+            cufe = basic_data.get("cufe")
+
+            if cufe:
+                # ✅ NOMENCLATURA ESTÁNDAR: {CUFE}.pdf
+                pdf_filename_estandar = f"{cufe.lower()}.pdf"
+
+                # Validar que el PDF existe en disco (verificación de consistencia)
+                pdf_path = self.xml_path.parent / pdf_filename_estandar
+
+                if pdf_path.exists():
+                    pdf_filename = pdf_filename_estandar
+                    logger.debug(
+                        "✅ PDF con nomenclatura estándar verificado: %s",
+                        pdf_filename_estandar
+                    )
+                else:
+                    # ⚠️ PDF no encontrado con nomenclatura estándar
+                    # Posibles causas:
+                    # 1. PDF llegó en email diferente (aún no descargado)
+                    # 2. PDF tiene nomenclatura antigua (pre-migración)
+                    # 3. No hay PDF para esta factura
+
+                    logger.warning(
+                        "⚠️ PDF esperado no encontrado: %s. "
+                        "Posiblemente llegó en email diferente o tiene nomenclatura antigua.",
+                        pdf_filename_estandar
+                    )
+
+                    # Guardar NULL en BD → invoice_pdf_service usará fallbacks
+                    pdf_filename = None
+            else:
+                # ❌ XML sin CUFE (caso excepcional)
+                logger.error(
+                    "❌ XML sin CUFE: %s. No se puede determinar PDF con nomenclatura estándar.",
+                    self.xml_path
+                )
+                pdf_filename = None
 
             final_data = {
                 **basic_data,
@@ -121,6 +185,7 @@ class InvoiceParserFacade:
                 "iva": float(iva),
                 "retenciones": float(retenciones),
                 "total_a_pagar": float(total_final_corregido),
+                "pdf_filename": pdf_filename,  # Nombre del PDF para lookup O(1)
                 "items_resumen": items_resumen,
                 "concepto_principal": concepto,
                 "concepto_normalizado": self.invoice_enricher.normalize_concepto(concepto),

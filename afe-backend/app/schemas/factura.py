@@ -78,8 +78,8 @@ class FacturaBase(BaseModel):
     numero_factura: str
     fecha_emision: date
     proveedor_id: Optional[int] = None
-    subtotal: condecimal(max_digits=15, decimal_places=2)
-    iva: condecimal(max_digits=15, decimal_places=2)
+    subtotal: Optional[condecimal(max_digits=15, decimal_places=2)] = None
+    iva: Optional[condecimal(max_digits=15, decimal_places=2)] = None
     total: Optional[condecimal(max_digits=15, decimal_places=2)] = None  # MULTI-TENANT: Total de la factura
     fecha_vencimiento: Optional[date] = None
     cufe: str

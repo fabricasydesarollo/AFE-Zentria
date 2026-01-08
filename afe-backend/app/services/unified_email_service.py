@@ -119,7 +119,7 @@ class UnifiedEmailService:
         # Intentar con Microsoft Graph primero
         if self.graph_service:
             try:
-                logger.info("📧 Intentando envío con Microsoft Graph...")
+                logger.info("Intentando envío con Microsoft Graph...")
                 result = self.graph_service.send_email(
                     to_email=to_email,
                     subject=subject,
@@ -142,7 +142,7 @@ class UnifiedEmailService:
         # Fallback a SMTP
         if self.smtp_service:
             try:
-                logger.info("📧 Intentando envío con SMTP (fallback)...")
+                logger.info("Intentando envío con SMTP (fallback)...")
                 result = self.smtp_service.send_email(
                     to_email=to_email,
                     subject=subject,

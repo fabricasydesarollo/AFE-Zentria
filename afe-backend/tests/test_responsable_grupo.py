@@ -8,8 +8,7 @@ Tests de integración para:
 - Actualización de asignaciones
 - Validaciones de seguridad
 
-Autor: Sistema AFE Backend
-Fecha: 2025-12-03
+
 """
 import pytest
 from fastapi.testclient import TestClient

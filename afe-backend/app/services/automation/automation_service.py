@@ -1,16 +1,5 @@
 # app/services/automation/automation_service.py
-"""
-Servicio principal de automatización de facturas recurrentes.
-
-Este es el punto de entrada principal para todo el sistema de automatización.
-Orquesta todos los componentes (detector de patrones, generador de fingerprints,
-motor de decisiones) para procesar facturas pendientes de forma inteligente.
-
-INTEGRACIÓN CON PATRONES_FACTURAS:
-- Consulta patrones históricos antes de tomar decisiones
-- Ajusta scores de confianza según tipo de patrón (TIPO_A/B/C)
-- Prioriza auto-aprobación para patrones TIPO_A (fijos)
-"""
+"""Servicio principal de automatización de facturas recurrentes."""
 
 import logging
 from datetime import datetime, timedelta
@@ -33,10 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class AutomationService:
-    """
-    Servicio principal de automatización de facturas recurrentes.
-    """
-    
+    """Servicio principal de automatización de facturas recurrentes."""
+
     def __init__(self):
         self.fingerprint_gen = FingerprintGenerator()
         self.pattern_detector = PatternDetector()
@@ -53,22 +40,12 @@ class AutomationService:
         }
 
     def procesar_facturas_pendientes(
-        self, 
-        db: Session, 
+        self,
+        db: Session,
         limite_facturas: int = 50,
         modo_debug: bool = False
     ) -> Dict[str, Any]:
-        """
-        Procesa todas las facturas pendientes de automatización.
-        
-        Args:
-            db: Sesión de base de datos
-            limite_facturas: Máximo número de facturas a procesar
-            modo_debug: Si True, incluye información detallada de debug
-            
-        Returns:
-            Resumen del procesamiento realizado
-        """
+        """Procesa todas las facturas pendientes de automatización."""
         self.stats['tiempo_inicio'] = datetime.utcnow()
         
         try:
@@ -110,22 +87,12 @@ class AutomationService:
             raise
 
     def procesar_factura_individual(
-        self, 
-        db: Session, 
+        self,
+        db: Session,
         factura: Factura,
         modo_debug: bool = False
     ) -> Dict[str, Any]:
-        """
-        Procesa una factura individual para determinar si debe ser aprobada automáticamente.
-        
-        Args:
-            db: Sesión de base de datos
-            factura: Factura a procesar
-            modo_debug: Si incluir información detallada
-            
-        Returns:
-            Resultado del procesamiento de la factura
-        """
+        """Procesa una factura individual para determinar si debe ser aprobada automáticamente."""
         logger.info(f"Procesando factura {factura.numero_factura} (ID: {factura.id})")
         
         try:
@@ -185,9 +152,7 @@ class AutomationService:
         ])
 
     def _enriquecer_datos_factura(self, db: Session, factura: Factura) -> None:
-        """
-        Enriquece los datos de la factura si faltan campos de automatización.
-        """
+        """Enriquece los datos de la factura si faltan campos de automatización."""
         actualizar = False
         campos_actualizacion = {}
         
@@ -216,9 +181,7 @@ class AutomationService:
             return "factura_estandar"
 
     def _buscar_facturas_historicas(self, db: Session, factura: Factura) -> List[Factura]:
-        """
-        Busca facturas históricas similares para análisis de patrones.
-        """
+        """Busca facturas históricas similares para análisis de patrones."""
         facturas_historicas = []
 
         # PRIORIDAD 1: Buscar factura del mes anterior (lógica principal de aprobación)
@@ -274,15 +237,13 @@ class AutomationService:
         return facturas_filtradas[:10]  # Máximo 10 facturas históricas
 
     def _aplicar_decision(
-        self, 
-        db: Session, 
-        factura: Factura, 
+        self,
+        db: Session,
+        factura: Factura,
         resultado_decision: ResultadoDecision,
         resultado_patron: ResultadoAnalisisPatron
     ) -> None:
-        """
-        Aplica la decisión tomada actualizando la factura en la base de datos.
-        """
+        """Aplica la decisión tomada actualizando la factura en la base de datos."""
         campos_actualizacion = {
             'patron_recurrencia': resultado_patron.patron_temporal.tipo,
             'confianza_automatica': resultado_decision.confianza,
@@ -303,15 +264,13 @@ class AutomationService:
         crud_factura.update_factura(db, factura, campos_actualizacion)
 
     def _registrar_auditoria(
-        self, 
-        db: Session, 
-        factura: Factura, 
+        self,
+        db: Session,
+        factura: Factura,
         resultado_decision: ResultadoDecision,
         resultado_patron: ResultadoAnalisisPatron
     ) -> None:
-        """
-        Registra la decisión en el log de auditoría.
-        """
+        """Registra la decisión en el log de auditoría."""
         accion = "aprobacion_automatica" if resultado_decision.decision == TipoDecision.APROBACION_AUTOMATICA else "revision_requerida"
         
         detalles_auditoria = {
@@ -355,8 +314,8 @@ class AutomationService:
         )
 
     def _crear_resultado_exitoso(
-        self, 
-        factura: Factura, 
+        self,
+        factura: Factura,
         resultado_decision: ResultadoDecision,
         resultado_patron: ResultadoAnalisisPatron,
         modo_debug: bool
@@ -439,8 +398,8 @@ class AutomationService:
         }
 
     def _generar_resumen_procesamiento(
-        self, 
-        resultados: List[Dict[str, Any]], 
+        self,
+        resultados: List[Dict[str, Any]],
         modo_debug: bool
     ) -> Dict[str, Any]:
         """Genera el resumen final del procesamiento."""

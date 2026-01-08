@@ -8,8 +8,6 @@ Tests de integración para verificar:
 - Aislamiento de datos entre grupos
 - Endpoints de Dashboard con multi-tenant
 
-Autor: Sistema AFE Backend
-Fecha: 2025-12-03
 """
 import pytest
 from fastapi.testclient import TestClient

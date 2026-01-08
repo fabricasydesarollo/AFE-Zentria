@@ -107,8 +107,6 @@ function AsignacionesTab() {
         // El backend ya filtra automáticamente por los grupos del usuario logueado
         const response = await gruposService.listarGrupos();
 
-        console.log('[DEBUG] Grupos cargados desde backend:', response.grupos);
-
         setGrupos(response.grupos || []);
       } catch (error) {
         console.error('Error cargando grupos:', error);
@@ -149,23 +147,18 @@ function AsignacionesTab() {
     async (nitsInput: string[]): Promise<string[]> => {
       const nitsNormalizados: string[] = [];
 
-      console.log('[normalizarNits] Iniciando normalización de', nitsInput.length, 'NITs');
-      console.log('[normalizarNits] bulkResponsableId:', bulkResponsableId);
 
       for (const nitInput of nitsInput) {
         try {
           // Validación básica rápida antes de llamada al backend
           if (!nitValidationService.isValidBasicFormat(nitInput)) {
-            console.log(`[normalizarNits] SKIP - Basic format failed: ${nitInput}`);
             continue;
           }
 
           // Validar y normalizar a través del backend (calcula DV DIAN)
           const validationResult = await nitValidationService.validateNit(nitInput);
-          console.log(`[normalizarNits] validateNit(${nitInput}) =`, validationResult);
 
           if (!validationResult.isValid || !validationResult.normalizedNit) {
-            console.log(`[normalizarNits] SKIP - Backend validation failed: ${nitInput}`);
             continue;
           }
 
@@ -177,20 +170,15 @@ function AsignacionesTab() {
               (a) => a.nit === nitNormalizado && a.responsable_id === bulkResponsableId && a.activo
             );
             if (yaAsignado) {
-              console.log(`[normalizarNits] SKIP - Already assigned: ${nitNormalizado}`);
               continue;
             }
           }
 
-          console.log(`[normalizarNits] ACCEPTED: ${nitNormalizado}`);
           nitsNormalizados.push(nitNormalizado);
         } catch (error) {
-          console.error(`[normalizarNits] Exception validating NIT ${nitInput}:`, error);
           continue;
         }
       }
-
-      console.log('[normalizarNits] Resultado final:', nitsNormalizados.length, 'NITs válidos');
       return nitsNormalizados;
     },
     [bulkResponsableId, asignaciones]
@@ -214,7 +202,6 @@ function AsignacionesTab() {
       } else {
         // Cargar todos los responsables (comportamiento original)
         const data = await getResponsables({ limit: 1000 });
-        console.log('Responsables cargados:', data);
         setResponsables(data);
       }
     } catch (err) {
@@ -406,23 +393,13 @@ function AsignacionesTab() {
       // Convertir NITs a string separado por comas para el endpoint bulk-nit-config
       const nitsString = nitsAEnviar.join(',');
 
-      console.log('==== DEBUG ASIGNACIÓN MASIVA ====');
-      console.log('NITs a asignar:', nitsString);
-      console.log('Responsable ID:', bulkResponsableId);
-
       const requestData = {
         responsable_id: bulkResponsableId,
         nits: nitsString,
         permitir_aprobacion_automatica: true,
       };
-      console.log('Datos completos a enviar:', requestData);
 
       const response = await createAsignacionesNitBulkFromConfig(requestData);
-
-      console.log('Respuesta del backend:', response);
-      console.log('Errores del backend:', response.errores);
-      console.log('Mensaje del backend:', response.mensaje);
-      console.log('==== FIN DEBUG ====');
 
       // Recargar asignaciones inmediatamente (todas, incluyendo inactivas)
       await dispatch(fetchAsignaciones({}));

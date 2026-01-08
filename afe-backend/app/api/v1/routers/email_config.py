@@ -31,113 +31,18 @@ from app.schemas.email_config import (
 )
 from app.crud import email_config as crud
 from app.utils.nit_validator import NitValidator
-from app.utils.logger import logger
 from datetime import datetime
 
 router = APIRouter(prefix="/email-config", tags=["Email Configuration"])
 
 
 # ==================== Funciones Helper ====================
-
-def _procesar_facturas_cuarentena_por_nit(db: Session, nit: str, grupo_id: int) -> int:
-    """
-    Procesa facturas en cuarentena cuando se configura un NIT.
-
-    ARQUITECTURA HÍBRIDA 2025-12-14:
-    - Busca facturas con estado="en_cuarentena" y nit del proveedor
-    - Asigna grupo_id
-    - Cambia estado a "en_revision"
-    - Crea workflows automáticos
-
-    Args:
-        db: Sesión de base de datos
-        nit: NIT del proveedor
-        grupo_id: ID del grupo a asignar
-
-    Returns:
-        Número de facturas procesadas
-    """
-    from app.models.factura import Factura, EstadoFactura
-    from app.models.proveedor import Proveedor
-    from app.services.workflow_automatico import WorkflowAutomaticoService
-
-    # Buscar proveedor por NIT
-    proveedor = db.query(Proveedor).filter(Proveedor.nit == nit).first()
-
-    if not proveedor:
-        logger.warning(
-            f"⚠️ [CUARENTENA] No existe proveedor con NIT {nit}. "
-            f"No hay facturas para procesar."
-        )
-        return 0
-
-    # Buscar facturas en cuarentena de este proveedor
-    facturas_cuarentena = db.query(Factura).filter(
-        Factura.proveedor_id == proveedor.id,
-        Factura.grupo_id.is_(None),
-        Factura.estado == EstadoFactura.en_cuarentena
-    ).all()
-
-    if not facturas_cuarentena:
-        logger.info(
-            f"ℹ️ [CUARENTENA] No hay facturas en cuarentena para NIT {nit}"
-        )
-        return 0
-
-    logger.info(
-        f"📦 [CUARENTENA] Procesando {len(facturas_cuarentena)} facturas "
-        f"del NIT {nit} (grupo_id={grupo_id})"
-    )
-
-    workflow_service = WorkflowAutomaticoService(db)
-    procesadas = 0
-
-    for factura in facturas_cuarentena:
-        try:
-            # Asignar grupo y cambiar estado
-            factura.grupo_id = grupo_id
-            factura.estado = EstadoFactura.en_revision
-
-            # Crear workflow automático
-            workflow_resultado = workflow_service.procesar_factura_nueva(factura.id)
-
-            if workflow_resultado.get("exito"):
-                procesadas += 1
-                logger.info(
-                    f"✅ [CUARENTENA] Factura {factura.numero_factura} procesada: "
-                    f"grupo_id={grupo_id}, responsable_id={workflow_resultado.get('responsable_id')}"
-                )
-            else:
-                logger.warning(
-                    f"⚠️ [CUARENTENA] Factura {factura.numero_factura} sin workflow: "
-                    f"{workflow_resultado.get('error')}"
-                )
-
-        except Exception as e:
-            logger.error(
-                f"❌ [CUARENTENA] Error procesando factura {factura.id}: {e}",
-                exc_info=True
-            )
-
-    db.commit()
-
-    logger.info(
-        f"✅ [CUARENTENA] Procesadas {procesadas}/{len(facturas_cuarentena)} facturas "
-        f"para NIT {nit}"
-    )
-
-    return procesadas
+# NOTA: Función _procesar_facturas_cuarentena_por_nit ELIMINADA (2025-12-29)
+# Reemplazada por: app.services.cuarentena_service.liberar_facturas_grupo()
+# Razón: Arquitectura multi-tenant completa con cuarentena por grupo
 
 def _validar_pertenencia_grupo(db: Session, cuenta_id: int, current_user) -> None:
-    """
-    Valida que el usuario tenga permisos para acceder a la cuenta.
-
-    SuperAdmin: Siempre tiene acceso
-    Admin: Solo si la cuenta pertenece a uno de sus grupos
-
-    Raises:
-        HTTPException: Si no tiene permisos
-    """
+    """Valida permisos multi-tenant para acceder a una cuenta."""
     if current_user.role.nombre.lower() == "superadmin":
         return  # SuperAdmin siempre tiene acceso
 
@@ -176,17 +81,7 @@ def listar_cuentas_correo(
     db: Session = Depends(get_db),
     current_user = Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Lista cuentas de correo configuradas con filtrado multi-tenant.
-
-    **Filtros:**
-    - `solo_activas`: Solo cuentas activas
-    - `organizacion`: Filtrar por organización
-
-    **Multi-tenant:**
-    - SuperAdmin: Ve todas las cuentas
-    - Admin: Solo ve cuentas de sus grupos asignados
-    """
+    """Lista cuentas de correo con filtrado multi-tenant."""
     # SuperAdmin ve todas las cuentas
     if current_user.role.nombre.lower() == "superadmin":
         resumen = crud.get_resumen_todas_cuentas(db)
@@ -385,9 +280,11 @@ def crear_nit(
     - El NIT no puede estar duplicado en la misma cuenta
     - El NIT debe ser válido (solo números, 5-20 dígitos)
 
-    **MULTI-TENANT 2025-12-14:**
-    - Al configurar un NIT, procesa automáticamente facturas en cuarentena de ese NIT
-    - Asigna grupo_id y crea workflows para esas facturas
+    **MULTI-TENANT 2025-12-29:**
+    - El NIT se asigna a un grupo (sede/subsede)
+    - Las facturas de este NIT automáticamente se asignan al grupo
+    - Si el grupo tiene responsables → workflows automáticos
+    - Si el grupo NO tiene responsables → cuarentena (usar POST /api/v1/cuarentena/liberar/{grupo_id})
     """
     # Verificar que la cuenta existe
     cuenta = crud.get_cuenta_correo(db, nit.cuenta_correo_id)
@@ -412,17 +309,9 @@ def crear_nit(
     # Crear configuración NIT
     nit_config = crud.create_nit_configuracion(db, nit)
 
-    # MULTI-TENANT 2025-12-14: Procesar facturas en cuarentena de este NIT
-    facturas_procesadas = _procesar_facturas_cuarentena_por_nit(
-        db=db,
-        nit=nit.nit,
-        grupo_id=cuenta.grupo_id
-    )
-
-    if facturas_procesadas > 0:
-        logger.info(
-            f"✅ [CUARENTENA] Procesadas {facturas_procesadas} facturas al configurar NIT {nit.nit}"
-        )
+    # NOTA (2025-12-29): Procesamiento de cuarentena ahora se hace desde:
+    # POST /api/v1/cuarentena/liberar/{grupo_id}
+    # Al asignar responsables al grupo, las facturas se liberan automáticamente
 
     return nit_config
 

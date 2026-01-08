@@ -5,7 +5,7 @@ Este servicio normaliza descripciones de items para permitir comparaciones
 consistentes entre facturas de diferentes períodos.
 
 
-Fecha: 2025-10-09
+
 """
 
 import hashlib

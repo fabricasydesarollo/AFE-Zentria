@@ -1,10 +1,5 @@
 # app/services/automation/notification_service.py
-"""
-Servicio de notificaciones para el sistema de automatización de facturas.
-
-Maneja el envío de notificaciones cuando las facturas requieren revisión manual
-o cuando se necesita comunicar decisiones automáticas a los usuarios.
-"""
+"""Servicio de notificaciones para el sistema de automatización de facturas."""
 
 import logging
 from datetime import datetime, timedelta
@@ -26,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ConfiguracionNotificacion:
-    """Configuración para diferentes tipos de notificaciones."""
+    """Configuración de notificaciones."""
     activar_email: bool = True
     activar_sistema: bool = True
     incluir_detalles_tecnicos: bool = False
@@ -35,9 +30,7 @@ class ConfiguracionNotificacion:
 
 
 class NotificationService:
-    """
-    Servicio de notificaciones para automatización de facturas.
-    """
+    """Servicio de notificaciones para automatización de facturas."""
 
     def __init__(self):
         self.config_default = ConfiguracionNotificacion()
@@ -171,9 +164,7 @@ Sistema Automático de Facturas
         contexto_historico: Optional[Dict[str, Any]] = None,
         config: Optional[ConfiguracionNotificacion] = None
     ) -> Dict[str, Any]:
-        """
-        Envía notificación cuando una factura requiere revisión manual con template profesional.
-        """
+        """Envía notificación cuando una factura requiere revisión manual."""
         config = config or self.config_default
 
         try:
@@ -268,9 +259,7 @@ Sistema Automático de Facturas
         variacion_monto: float = 0.0,
         config: Optional[ConfiguracionNotificacion] = None
     ) -> Dict[str, Any]:
-        """
-        Envía notificación cuando una factura es aprobada automáticamente.
-        """
+        """Envía notificación cuando una factura es aprobada automáticamente."""
         config = config or self.config_default
 
         try:
@@ -340,9 +329,7 @@ Sistema Automático de Facturas
         usuarios_notificar: Optional[List[int]] = None,
         config: Optional[ConfiguracionNotificacion] = None
     ) -> Dict[str, Any]:
-        """
-        Envía resumen del procesamiento automático a los usuarios.
-        """
+        """Envía resumen del procesamiento automático a los usuarios."""
         config = config or self.config_default
 
         try:
@@ -432,9 +419,7 @@ Sistema Automático de Facturas
         stack_trace: Optional[str] = None,
         config: Optional[ConfiguracionNotificacion] = None
     ) -> Dict[str, Any]:
-        """
-        Notifica errores en el procesamiento automático.
-        """
+        """Notifica errores en el procesamiento automático."""
         config = config or self.config_default
 
         try:
@@ -486,14 +471,7 @@ Sistema Automático de Facturas
             return {'exito': False, 'error': str(e)}
 
     def _obtener_responsables_factura(self, db: Session, factura: Factura) -> List[Usuario]:
-        """
-        Obtiene los usuarios que deben ser notificados para una factura.
-
-        Enterprise Pattern: Multi-Usuario por NIT
-        - Los usuarios se asignan por NIT, no por proveedor
-        - Un NIT puede tener múltiples usuarios
-        - Se consulta la tabla asignacion_nit_responsable
-        """
+        """Obtiene los usuarios que deben ser notificados para una factura."""
         from app.models.workflow_aprobacion import AsignacionNitResponsable
 
         usuarios = []
@@ -542,11 +520,7 @@ Sistema Automático de Facturas
         datos_plantilla: Dict[str, Any],
         config: ConfiguracionNotificacion
     ) -> Dict[str, Any]:
-        """
-        Envía una notificación individual a un usuario.
-
-        Usa EmailService + EmailTemplateService para enviar emails HTML profesionales.
-        """
+        """Envía una notificación individual a un usuario."""
         try:
             # Si las notificaciones por email están desactivadas, solo simular
             if not config.activar_email:
@@ -683,14 +657,12 @@ Sistema Automático de Facturas
         }
 
     def personalizar_plantilla(
-        self, 
-        tipo_notificacion: str, 
-        idioma: str, 
+        self,
+        tipo_notificacion: str,
+        idioma: str,
         nueva_plantilla: Dict[str, str]
     ) -> bool:
-        """
-        Permite personalizar las plantillas de notificación.
-        """
+        """Permite personalizar las plantillas de notificación."""
         try:
             if tipo_notificacion in self.plantillas:
                 if idioma not in self.plantillas[tipo_notificacion]:

@@ -1,18 +1,8 @@
 """
-Servicio de Análisis Continuo de Patrones de Facturas.
+Servicio de análisis continuo de patrones de facturas.
 
-Este servicio enterprise:
-1. Analiza facturas de la BD (últimos N meses)
-2. Agrupa por proveedor + concepto normalizado
-3. Calcula estadísticas actualizadas (promedio, desviación, CV)
-4. Clasifica en TIPO_A, TIPO_B, TIPO_C
-5. Actualiza/inserta en patrones_facturas
-6. Se ejecuta periódicamente (diario/semanal) o bajo demanda
-
-Este es el componente de PRODUCCIÓN que reemplaza al bootstrap inicial del Excel.
-
-
-Fecha: 2025-10-08
+Analiza facturas de BD, agrupa por proveedor + concepto normalizado,
+calcula estadísticas y clasifica en TIPO_A, TIPO_B, TIPO_C.
 """
 
 import hashlib
@@ -31,46 +21,29 @@ from app.models.patrones_facturas import PatronesFacturas, TipoPatron
 from app.models.proveedor import Proveedor
 
 
-# Configurar logging
 logger = logging.getLogger(__name__)
 
 
 class AnalizadorPatronesService:
-    """
-    Servicio empresarial de análisis continuo de patrones de facturas.
+    """Servicio de análisis continuo de patrones de facturas."""
 
-    Características:
-    - Análisis incremental (solo facturas relevantes)
-    - Clasificación automática TIPO_A/B/C
-    - Actualización inteligente de patrones existentes
-    - Detección de cambios en comportamiento de proveedores
-    - Métricas de calidad y confiabilidad
-    """
-
-    # Umbrales de clasificación (según especificación)
+    # Umbrales de clasificación
     UMBRAL_TIPO_A = Decimal('5.0')   # CV < 5% = Valor fijo
     UMBRAL_TIPO_B = Decimal('30.0')  # CV < 30% = Valor fluctuante predecible
-    # CV > 30% = TIPO_C (excepcional)
 
     # Configuración de análisis
-    MIN_FACTURAS_PATRON = 3  # Mínimo de facturas para considerar un patrón válido
-    MIN_MESES_DIFERENTES = 2  # Mínimo de meses diferentes con facturas
+    MIN_FACTURAS_PATRON = 3
+    MIN_MESES_DIFERENTES = 2
 
     def __init__(self, db: Session):
-        """
-        Inicializa el servicio.
-
-        Args:
-            db: Sesión de base de datos SQLAlchemy
-        """
         self.db = db
         self.stats = {
             'facturas_analizadas': 0,
             'patrones_detectados': 0,
             'patrones_nuevos': 0,
             'patrones_actualizados': 0,
-            'patrones_mejorados': 0,  # Patrones que mejoraron de TIPO_C a TIPO_B/A
-            'patrones_degradados': 0,  # Patrones que empeoraron
+            'patrones_mejorados': 0,
+            'patrones_degradados': 0,
             'errores': 0
         }
 
@@ -81,22 +54,10 @@ class AnalizadorPatronesService:
         estados_facturas: Optional[List[EstadoFactura]] = None,
         forzar_recalculo: bool = False
     ) -> Dict[str, Any]:
-        """
-        Analiza facturas de la BD y actualiza patrones en patrones_facturas.
-
-        Args:
-            ventana_meses: Cantidad de meses hacia atrás a analizar (default: 12)
-            solo_proveedores: Lista de IDs de proveedores a analizar (None = todos)
-            estados_facturas: Estados de facturas a considerar (None = aprobadas y pagadas)
-            forzar_recalculo: Si True, recalcula todos los patrones incluso si ya existen
-
-        Returns:
-            Diccionario con resultados del análisis
-        """
+        """Analiza facturas de BD y actualiza patrones en patrones_facturas."""
         logger.info(f"Iniciando análisis de patrones desde BD (ventana: {ventana_meses} meses)")
 
         try:
-            # 1. Obtener facturas relevantes
             fecha_desde = datetime.now() - timedelta(days=ventana_meses * 30)
 
             if estados_facturas is None:
@@ -115,15 +76,12 @@ class AnalizadorPatronesService:
                 logger.warning("Insuficientes facturas para análisis de patrones")
                 return self._generar_resultado(exito=False, mensaje="Insuficientes facturas")
 
-            # 2. Agrupar facturas por proveedor + concepto
             grupos = self._agrupar_facturas_por_patron(facturas)
             logger.info(f"     {len(grupos)} grupos de patrones detectados")
 
-            # 3. Calcular estadísticas para cada grupo
             patrones_calculados = self._calcular_estadisticas_grupos(grupos, ventana_meses)
             logger.info(f"     Estadísticas calculadas para {len(patrones_calculados)} patrones")
 
-            # 4. Persistir o actualizar patrones
             self._persistir_patrones(patrones_calculados, forzar_recalculo)
             logger.info(
                 "Patrones persistidos: %d nuevos, %d actualizados",
@@ -131,7 +89,6 @@ class AnalizadorPatronesService:
                 self.stats['patrones_actualizados']
             )
 
-            # 5. Analizar cambios en patrones existentes
             cambios_detectados = self._detectar_cambios_patrones(patrones_calculados)
 
             return self._generar_resultado(
@@ -153,9 +110,7 @@ class AnalizadorPatronesService:
         solo_proveedores: Optional[List[int]],
         estados: List[EstadoFactura]
     ) -> List[Factura]:
-        """
-        Obtiene facturas de la BD que cumplen criterios para análisis.
-        """
+        """Obtiene facturas de BD que cumplen criterios para análisis."""
         query = self.db.query(Factura).filter(
             Factura.fecha_emision >= fecha_desde.date(),
             Factura.estado.in_(estados),
@@ -167,28 +122,18 @@ class AnalizadorPatronesService:
         if solo_proveedores:
             query = query.filter(Factura.proveedor_id.in_(solo_proveedores))
 
-        # Ordenar por fecha para análisis temporal
         facturas = query.order_by(Factura.fecha_emision.asc()).all()
 
         return facturas
 
     def _agrupar_facturas_por_patron(self, facturas: List[Factura]) -> Dict[str, List[Factura]]:
-        """
-        Agrupa facturas por proveedor + concepto normalizado.
-
-        Estrategia de agrupación:
-        1. Si existe concepto_normalizado → usar ese
-        2. Si existe concepto_hash → usar ese
-        3. Si no → generar hash del concepto_principal
-        """
+        """Agrupa facturas por proveedor + concepto normalizado."""
         grupos = defaultdict(list)
 
         for factura in facturas:
-            # Obtener o generar concepto normalizado
             concepto_normalizado = self._obtener_concepto_normalizado(factura)
 
             if not concepto_normalizado:
-                # Si no hay concepto, agrupar solo por proveedor (patrón genérico)
                 concepto_normalizado = "servicio_general"
 
             # Generar clave única: proveedor_id|concepto_normalizado
@@ -205,22 +150,16 @@ class AnalizadorPatronesService:
         return grupos_validos
 
     def _obtener_concepto_normalizado(self, factura: Factura) -> Optional[str]:
-        """
-        Obtiene o genera el concepto normalizado de una factura.
-        """
-        # Prioridad 1: concepto_normalizado existente
+        """Obtiene o genera el concepto normalizado de una factura."""
         if factura.concepto_normalizado:
             return factura.concepto_normalizado.lower().strip()
 
-        # Prioridad 2: generar desde concepto_principal
         if factura.concepto_principal:
             concepto = factura.concepto_principal.lower().strip()
-            # Normalizar: quitar acentos, caracteres especiales
             concepto = concepto.replace('á', 'a').replace('é', 'e').replace('í', 'i')
             concepto = concepto.replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')
-            return concepto[:200]  # Limitar longitud
+            return concepto[:200]
 
-        # Si no hay concepto, retornar None
         return None
 
     def _calcular_estadisticas_grupos(
@@ -228,9 +167,7 @@ class AnalizadorPatronesService:
         grupos: Dict[str, List[Factura]],
         ventana_meses: int
     ) -> List[Dict[str, Any]]:
-        """
-        Calcula estadísticas detalladas para cada grupo de facturas.
-        """
+        """Calcula estadísticas detalladas para cada grupo de facturas."""
         patrones_calculados = []
 
         for key, facturas_grupo in grupos.items():
@@ -238,14 +175,12 @@ class AnalizadorPatronesService:
                 proveedor_id_str, concepto_normalizado = key.split('|', 1)
                 proveedor_id = int(proveedor_id_str)
 
-                # Extraer montos y fechas
                 montos = [float(f.total_a_pagar) for f in facturas_grupo if f.total_a_pagar]
                 fechas = [f.fecha_emision for f in facturas_grupo]
 
                 if len(montos) < self.MIN_FACTURAS_PATRON:
                     continue
 
-                # Calcular meses únicos
                 meses_unicos = set((f.year, f.month) for f in fechas)
 
                 if len(meses_unicos) < self.MIN_MESES_DIFERENTES:
@@ -268,10 +203,8 @@ class AnalizadorPatronesService:
                 else:
                     tipo_patron = TipoPatron.TIPO_C
 
-                # Análisis de frecuencia temporal
                 frecuencia_detectada = self._detectar_frecuencia_temporal(fechas)
 
-                # Determinar si puede aprobar automáticamente
                 puede_aprobar_auto = self._puede_aprobar_automaticamente(
                     tipo_patron=tipo_patron,
                     cantidad_facturas=len(facturas_grupo),
@@ -286,16 +219,12 @@ class AnalizadorPatronesService:
                     rango_inferior = max(Decimal('0'), monto_promedio - (2 * desviacion_std))
                     rango_superior = monto_promedio + (2 * desviacion_std)
 
-                # Umbral de alerta
                 umbral_alerta = self._calcular_umbral_alerta(tipo_patron, cv)
 
-                # Generar hash del concepto
                 concepto_hash = hashlib.md5(concepto_normalizado.encode('utf-8')).hexdigest()
 
-                # Última factura (para tracking)
                 ultima_factura = max(facturas_grupo, key=lambda f: f.fecha_emision)
 
-                # Construir patrón
                 patron = {
                     'proveedor_id': proveedor_id,
                     'concepto_normalizado': concepto_normalizado,
@@ -329,13 +258,10 @@ class AnalizadorPatronesService:
         return patrones_calculados
 
     def _detectar_frecuencia_temporal(self, fechas: List[datetime]) -> str:
-        """
-        Detecta la frecuencia temporal del patrón (mensual, quincenal, etc).
-        """
+        """Detecta la frecuencia temporal del patrón (mensual, quincenal, etc)."""
         if len(fechas) < 2:
             return "unica"
 
-        # Calcular diferencias entre fechas consecutivas
         fechas_ordenadas = sorted(fechas)
         diferencias_dias = [
             (fechas_ordenadas[i+1] - fechas_ordenadas[i]).days
@@ -347,7 +273,6 @@ class AnalizadorPatronesService:
 
         promedio_dias = statistics.mean(diferencias_dias)
 
-        # Clasificar frecuencia
         if promedio_dias <= 10:
             return "semanal"
         elif promedio_dias <= 20:
@@ -370,14 +295,7 @@ class AnalizadorPatronesService:
         meses_diferentes: int,
         cv: Decimal
     ) -> bool:
-        """
-        Determina si un patrón cumple criterios para aprobación automática.
-
-        Criterios:
-        - TIPO_A: Siempre aprobable si tiene ≥3 facturas
-        - TIPO_B: Aprobable si tiene ≥5 facturas y CV < 25%
-        - TIPO_C: Nunca aprobable automáticamente
-        """
+        """Determina si un patrón cumple criterios para aprobación automática."""
         if tipo_patron == TipoPatron.TIPO_A:
             return cantidad_facturas >= 3 and meses_diferentes >= 2
 
@@ -388,46 +306,38 @@ class AnalizadorPatronesService:
             return False
 
     def _calcular_umbral_alerta(self, tipo_patron: TipoPatron, cv: Decimal) -> Decimal:
-        """
-        Calcula el umbral de alerta para desviaciones.
-        """
+        """Calcula el umbral de alerta para desviaciones."""
         if tipo_patron == TipoPatron.TIPO_A:
-            return Decimal('15.0')  # 15% para valores fijos
+            return Decimal('15.0')
         elif tipo_patron == TipoPatron.TIPO_B:
-            return min(Decimal('30.0'), cv + Decimal('10.0'))  # Dinámico según CV
+            return min(Decimal('30.0'), cv + Decimal('10.0'))
         else:  # TIPO_C
-            return Decimal('50.0')  # 50% para valores excepcionales
+            return Decimal('50.0')
 
     def _persistir_patrones(
         self,
         patrones: List[Dict[str, Any]],
         forzar_recalculo: bool
     ) -> None:
-        """
-        Persiste o actualiza patrones en patrones_facturas.
-        """
+        """Persiste o actualiza patrones en patrones_facturas."""
         for patron in patrones:
             try:
-                # Buscar patrón existente
                 patron_existente = self.db.query(PatronesFacturas).filter(
                     PatronesFacturas.proveedor_id == patron['proveedor_id'],
                     PatronesFacturas.concepto_hash == patron['concepto_hash']
                 ).first()
 
                 if patron_existente:
-                    # Verificar si hay cambios significativos
                     if forzar_recalculo or self._hay_cambios_significativos(patron_existente, patron):
                         self._actualizar_patron(patron_existente, patron)
                         self.stats['patrones_actualizados'] += 1
 
-                        # Detectar mejoras/degradaciones
                         if patron_existente.tipo_patron != patron['tipo_patron']:
                             if self._es_mejora_patron(patron_existente.tipo_patron, patron['tipo_patron']):
                                 self.stats['patrones_mejorados'] += 1
                             else:
                                 self.stats['patrones_degradados'] += 1
                 else:
-                    # Crear nuevo patrón
                     self._crear_patron(patron)
                     self.stats['patrones_nuevos'] += 1
 
@@ -440,7 +350,6 @@ class AnalizadorPatronesService:
                 logger.error(f"Error persistiendo patrón: {str(e)}")
                 self.stats['errores'] += 1
 
-        # Commit final
         try:
             self.db.commit()
         except Exception as e:
@@ -452,10 +361,7 @@ class AnalizadorPatronesService:
         patron_existente: PatronesFacturas,
         patron_nuevo: Dict[str, Any]
     ) -> bool:
-        """
-        Determina si hay cambios significativos entre el patrón existente y el nuevo.
-        """
-        # Cambio en tipo de patrón
+        """Determina si hay cambios significativos entre el patrón existente y el nuevo."""
         if patron_existente.tipo_patron != patron_nuevo['tipo_patron']:
             return True
 
@@ -469,11 +375,9 @@ class AnalizadorPatronesService:
             if variacion_monto > 10:
                 return True
 
-        # Cambio en cantidad de pagos (nuevos datos)
         if patron_nuevo['pagos_analizados'] > patron_existente.pagos_analizados:
             return True
 
-        # Cambio en aprobabilidad automática
         if patron_nuevo['puede_aprobar_auto'] != patron_existente.puede_aprobar_auto:
             return True
 
@@ -506,7 +410,7 @@ class AnalizadorPatronesService:
             puede_aprobar_auto=patron['puede_aprobar_auto'],
             umbral_alerta=patron['umbral_alerta'],
             fecha_analisis=datetime.utcnow(),
-            version_algoritmo="2.0"  # Versión de producción
+            version_algoritmo="2.0"
         )
 
         self.db.add(nuevo_patron)
@@ -574,15 +478,7 @@ class AnalizadorPatronesService:
         return resultado
 
     def obtener_estadisticas_patrones(self, proveedor_id: Optional[int] = None) -> Dict[str, Any]:
-        """
-        Obtiene estadísticas globales de patrones en patrones_facturas.
-
-        Args:
-            proveedor_id: Si se especifica, filtra por proveedor
-
-        Returns:
-            Estadísticas de los patrones almacenados
-        """
+        """Obtiene estadísticas globales de patrones en patrones_facturas."""
         query = self.db.query(PatronesFacturas)
 
         if proveedor_id:
@@ -597,7 +493,6 @@ class AnalizadorPatronesService:
                 'auto_aprobables': 0
             }
 
-        # Contar por tipo
         tipo_a = sum(1 for p in patrones if p.tipo_patron == TipoPatron.TIPO_A)
         tipo_b = sum(1 for p in patrones if p.tipo_patron == TipoPatron.TIPO_B)
         tipo_c = sum(1 for p in patrones if p.tipo_patron == TipoPatron.TIPO_C)

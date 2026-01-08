@@ -77,7 +77,7 @@ class FacturaService:
                     cuenta_correo_id
                 )
 
-            # ✨ NUEVA ESTRUCTURA CON RETENCIONES + MULTI-TENANT (14 campos esenciales)
+            # ✨ NUEVA ESTRUCTURA CON RETENCIONES + MULTI-TENANT + PDF_FILENAME (15 campos esenciales)
             factura_dict = {
                 # IDENTIFICACIÓN
                 "numero_factura": factura.numero_factura,
@@ -96,6 +96,9 @@ class FacturaService:
                 "iva": factura.iva,
                 "retenciones": factura.retenciones,  # Extraído del modelo Factura
                 "total_a_pagar": factura.total_a_pagar,
+
+                # ARCHIVOS (2025-12-23)
+                "pdf_filename": factura_data.get('pdf_filename'),  # Nombre del PDF para lookup O(1)
 
                 # MULTI-TENANT (2025-12-14)
                 "grupo_id": grupo_id,  # NULL si proveedor no existe

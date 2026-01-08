@@ -1,11 +1,5 @@
 # app/services/automation/pattern_detector.py
-"""
-Detector de patrones de recurrencia en facturas.
-
-Este módulo analiza facturas históricas para detectar patrones temporales
-y de contenido que indiquen recurrencia, permitiendo predecir si una
-nueva factura sigue un patrón establecido.
-"""
+"""Detector de patrones de recurrencia en facturas."""
 
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any, Optional, Tuple
@@ -49,10 +43,8 @@ class ResultadoAnalisisPatron:
 
 
 class PatternDetector:
-    """
-    Detector de patrones de recurrencia en facturas.
-    """
-    
+    """Detector de patrones de recurrencia en facturas."""
+
     def __init__(self):
         self.fingerprint_gen = FingerprintGenerator()
         
@@ -71,20 +63,11 @@ class PatternDetector:
         }
 
     def analizar_patron_recurrencia(
-        self, 
-        factura_nueva: Factura, 
+        self,
+        factura_nueva: Factura,
         facturas_historicas: List[Factura]
     ) -> ResultadoAnalisisPatron:
-        """
-        Analiza si una nueva factura sigue un patrón de recurrencia.
-        
-        Args:
-            factura_nueva: Factura a analizar
-            facturas_historicas: Historial de facturas del mismo proveedor/concepto
-            
-        Returns:
-            Resultado del análisis de patrones
-        """
+        """Analiza si una nueva factura sigue un patrón de recurrencia."""
         if len(facturas_historicas) < self.umbrales['min_facturas_patron']:
             return self._crear_resultado_sin_patron(
                 "Insuficiente historial para detectar patrones"
@@ -117,13 +100,11 @@ class PatternDetector:
         )
 
     def _analizar_patron_temporal(
-        self, 
-        facturas_historicas: List[Factura], 
+        self,
+        facturas_historicas: List[Factura],
         factura_nueva: Factura
     ) -> PatronTemporal:
-        """
-        Analiza el patrón temporal de las facturas históricas.
-        """
+        """Analiza el patrón temporal de las facturas históricas."""
         fechas = [f.fecha_emision for f in facturas_historicas] + [factura_nueva.fecha_emision]
         fechas.sort()
         
@@ -163,9 +144,7 @@ class PatternDetector:
         )
 
     def _clasificar_patron_temporal(self, promedio_dias: float) -> str:
-        """
-        Clasifica el tipo de patrón temporal basado en el promedio de días.
-        """
+        """Clasifica el tipo de patrón temporal basado en el promedio de días."""
         umbrales = self.umbrales
         
         if umbrales['dias_semanal_min'] <= promedio_dias <= umbrales['dias_semanal_max']:
@@ -182,15 +161,13 @@ class PatternDetector:
             return 'irregular'
 
     def _calcular_confianza_temporal(
-        self, 
-        promedio_dias: float, 
-        desviacion: float, 
-        num_observaciones: int, 
+        self,
+        promedio_dias: float,
+        desviacion: float,
+        num_observaciones: int,
         consistente: bool
     ) -> float:
-        """
-        Calcula la confianza del patrón temporal.
-        """
+        """Calcula la confianza del patrón temporal."""
         confianza_base = 0.5
         
         # Bonificación por consistencia
@@ -215,13 +192,11 @@ class PatternDetector:
         return max(0.0, min(1.0, confianza_base))
 
     def _analizar_patron_montos(
-        self, 
-        facturas_historicas: List[Factura], 
+        self,
+        facturas_historicas: List[Factura],
         factura_nueva: Factura
     ) -> PatronMonto:
-        """
-        Analiza el patrón de montos de las facturas.
-        """
+        """Analiza el patrón de montos de las facturas."""
         montos = [f.total_a_pagar for f in facturas_historicas if f.total_a_pagar]
         
         if not montos:
@@ -258,14 +233,12 @@ class PatternDetector:
         )
 
     def _calcular_confianza_monto(
-        self, 
-        variacion_maxima: float, 
-        num_montos: int, 
+        self,
+        variacion_maxima: float,
+        num_montos: int,
         estable: bool
     ) -> float:
-        """
-        Calcula la confianza del patrón de montos.
-        """
+        """Calcula la confianza del patrón de montos."""
         confianza_base = 0.5
         
         # Bonificación por estabilidad
@@ -287,13 +260,11 @@ class PatternDetector:
         return max(0.0, min(1.0, confianza_base))
 
     def _calcular_confianza_global(
-        self, 
-        patron_temporal: PatronTemporal, 
+        self,
+        patron_temporal: PatronTemporal,
         patron_monto: PatronMonto
     ) -> float:
-        """
-        Calcula la confianza global combinando patrones temporal y de monto.
-        """
+        """Calcula la confianza global combinando patrones temporal y de monto."""
         # Pesos para diferentes componentes
         peso_temporal = 0.6
         peso_monto = 0.4
@@ -314,15 +285,13 @@ class PatternDetector:
         return max(0.0, min(1.0, confianza_combinada))
 
     def _generar_razon_decision(
-        self, 
-        patron_temporal: PatronTemporal, 
-        patron_monto: PatronMonto, 
-        confianza_global: float, 
+        self,
+        patron_temporal: PatronTemporal,
+        patron_monto: PatronMonto,
+        confianza_global: float,
         es_recurrente: bool
     ) -> str:
-        """
-        Genera una explicación textual de la decisión tomada.
-        """
+        """Genera una explicación textual de la decisión tomada."""
         if not es_recurrente:
             if confianza_global < 0.3:
                 return f"Confianza muy baja ({confianza_global:.1%}) - patrón irregular"
@@ -357,9 +326,7 @@ class PatternDetector:
             return razon_base
 
     def _crear_resultado_sin_patron(self, razon: str) -> ResultadoAnalisisPatron:
-        """
-        Crea un resultado cuando no se puede detectar un patrón.
-        """
+        """Crea un resultado cuando no se puede detectar un patrón."""
         return ResultadoAnalisisPatron(
             patron_temporal=PatronTemporal("insuficiente", 0.0, 0.0, False, 0.0),
             patron_monto=PatronMonto(Decimal('0'), 0.0, [], False, 0.0),
@@ -370,9 +337,7 @@ class PatternDetector:
         )
 
     def predecir_proxima_fecha(self, facturas_historicas: List[Factura]) -> Optional[date]:
-        """
-        Predice cuándo debería llegar la próxima factura basándose en el patrón.
-        """
+        """Predice cuándo debería llegar la próxima factura basándose en el patrón."""
         if len(facturas_historicas) < 2:
             return None
 
@@ -393,9 +358,7 @@ class PatternDetector:
         return ultima_fecha + timedelta(days=dias_a_sumar)
 
     def calcular_probabilidad_recurrencia_mensual(self, facturas_historicas: List[Factura]) -> float:
-        """
-        Calcula la probabilidad de que las facturas sigan un patrón mensual.
-        """
+        """Calcula la probabilidad de que las facturas sigan un patrón mensual."""
         if len(facturas_historicas) < 3:
             return 0.0
         
@@ -412,28 +375,7 @@ class PatternDetector:
         factura_mes_anterior: Optional[Factura],
         tolerancia_porcentaje: float = 5.0
     ) -> Dict[str, Any]:
-        """
-        Compara una factura nueva con la del mes anterior para aprobación automática.
-
-        Esta es la lógica clave para el sistema de aprobación automática:
-        Si la factura del mes actual tiene el MISMO MONTO que la del mes anterior,
-        se aprueba automáticamente. Si hay diferencia, pasa a revisión.
-
-        Args:
-            factura_nueva: Factura a evaluar
-            factura_mes_anterior: Factura del mes anterior (puede ser None)
-            tolerancia_porcentaje: % de tolerancia en variación (default: 5%)
-
-        Returns:
-            Dict con:
-            - tiene_mes_anterior: bool
-            - montos_coinciden: bool
-            - diferencia_porcentaje: float
-            - diferencia_absoluta: Decimal
-            - decision_sugerida: 'aprobar_auto' | 'revision_manual'
-            - razon: str
-            - confianza: float
-        """
+        """Compara una factura nueva con la del mes anterior para aprobación automática."""
         # Si no hay factura del mes anterior, requiere revisión manual
         if not factura_mes_anterior:
             return {

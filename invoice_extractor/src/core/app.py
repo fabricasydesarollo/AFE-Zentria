@@ -154,7 +154,7 @@ class App:
             return
 
         logger.info("Processing %d files for NIT %s", len(saved_files), nit)
-        batch = self._process_files(saved_files, nit)
+        batch = self._process_files(saved_files, nit, user.cuenta_id)
 
         # Guardar consolidado si hay facturas procesadas
         if batch:
@@ -167,7 +167,7 @@ class App:
         # Guardar checkpoint de última búsqueda exitosa
         self._save_checkpoint(user.email, nit)
     
-    def _process_files(self, saved_files: List[str], nit: str) -> List[Dict[str, Any]]:
+    def _process_files(self, saved_files: List[str], nit: str, cuenta_correo_id: int = None) -> List[Dict[str, Any]]:
         """
         Procesa una lista de archivos XML.
         
@@ -191,6 +191,7 @@ class App:
             
             try:
                 data = self._parse_invoice(p)
+                data['cuenta_correo_id'] = cuenta_correo_id
                 if data:
                     # Guardar factura individual
                     fn = data.get("numero_factura") or p.stem

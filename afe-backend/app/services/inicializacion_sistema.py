@@ -1,24 +1,4 @@
-"""
-Servicio de Inicialización Enterprise del Sistema Completo.
-
-Este servicio orquesta la inicialización completa del sistema:
-1. Importación de presupuesto desde Excel
-2. Auto-configuración de asignaciones NIT-Usuario
-3. Vinculación automática de facturas existentes con presupuesto
-4. Activación de workflow de aprobación
-5. Generación de reporte ejecutivo
-
-Características Enterprise:
-- Transacciones atómicas
-- Validaciones completas
-- Rollback automático en caso de error
-- Idempotente (se puede ejecutar múltiples veces)
-- Logging detallado
-- Reporte ejecutivo
-
-
-
-"""
+"""Servicio de inicialización del sistema AFE."""
 
 import logging
 from typing import Dict, Any, List, Optional
@@ -44,9 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class InicializacionSistemaService:
-    """
-    Servicio de inicialización completa del sistema.
-    """
+    """Servicio de inicialización completa del sistema."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -66,39 +44,24 @@ class InicializacionSistemaService:
         ejecutar_workflow: bool = True,
         dry_run: bool = False
     ) -> Dict[str, Any]:
-        """
-        Inicialización completa del sistema.
-
-        Args:
-            año_fiscal: Año fiscal a procesar
-            responsable_default_id: ID del usuario por defecto
-            ejecutar_vinculacion: Si debe vincular facturas con presupuesto
-            ejecutar_workflow: Si debe activar workflow de aprobación
-            dry_run: Si True, solo simula sin hacer cambios
-
-        Returns:
-            Dict con reporte completo de la inicialización
-        """
+        """Inicialización completa del sistema."""
         logger.info("=" * 80)
-        logger.info("INICIALIZACIÓN ENTERPRISE DEL SISTEMA AFE")
+        logger.info("INICIALIZACIÓN DEL SISTEMA AFE")
         logger.info("=" * 80)
 
         try:
-            # PASO 1: Verificar estado actual
-            logger.info("\n PASO 1: Verificando estado actual del sistema...")
+            logger.info("\nVerificando estado actual del sistema...")
             estado_inicial = self._verificar_estado_sistema()
             self.resultados["estado_inicial"] = estado_inicial
             self._log_paso_completado("Verificación de estado")
 
-            # PASO 2: Validar pre-requisitos
-            logger.info("\n PASO 2: Validando pre-requisitos...")
+            logger.info("\nValidando pre-requisitos...")
             validacion = self._validar_prerequisitos(responsable_default_id)
             if not validacion["valido"]:
                 return self._generar_reporte_error(validacion["errores"])
             self._log_paso_completado("Validación de pre-requisitos")
 
-            # PASO 3: Auto-configurar asignaciones NIT-Usuario
-            logger.info("\n PASO 3: Auto-configurando asignaciones NIT-Usuario...")
+            logger.info("\nAuto-configurando asignaciones NIT-Usuario...")
             resultado_asignaciones = self._autoconfigurar_asignaciones(
                 responsable_default_id,
                 dry_run
@@ -106,9 +69,8 @@ class InicializacionSistemaService:
             self.resultados["asignaciones"] = resultado_asignaciones
             self._log_paso_completado("Auto-configuración de asignaciones")
 
-            # PASO 4: Vincular facturas con presupuesto
             if ejecutar_vinculacion:
-                logger.info("\n PASO 4: Vinculando facturas existentes con presupuesto...")
+                logger.info("\nVinculando facturas existentes con presupuesto...")
                 resultado_vinculacion = self._vincular_facturas_masivo(
                     año_fiscal,
                     dry_run
@@ -116,19 +78,17 @@ class InicializacionSistemaService:
                 self.resultados["vinculacion"] = resultado_vinculacion
                 self._log_paso_completado("Vinculación de facturas")
             else:
-                logger.info("\n  PASO 4: Saltando vinculación (deshabilitado)")
+                logger.info("\nSaltando vinculación (deshabilitado)")
 
-            # PASO 5: Activar workflow de aprobación
             if ejecutar_workflow:
-                logger.info("\n  PASO 5: Activando workflow de aprobación...")
+                logger.info("\nActivando workflow de aprobación...")
                 resultado_workflow = self._activar_workflow_masivo(dry_run)
                 self.resultados["workflow"] = resultado_workflow
                 self._log_paso_completado("Activación de workflow")
             else:
-                logger.info("\n  PASO 5: Saltando workflow (deshabilitado)")
+                logger.info("\nSaltando workflow (deshabilitado)")
 
-            # PASO 6: Generar reporte ejecutivo
-            logger.info("\n PASO 6: Generando reporte ejecutivo...")
+            logger.info("\nGenerando reporte ejecutivo...")
             estado_final = self._verificar_estado_sistema()
             self.resultados["estado_final"] = estado_final
             self.resultados["fin"] = datetime.now()
@@ -137,18 +97,17 @@ class InicializacionSistemaService:
             ).total_seconds()
             self._log_paso_completado("Generación de reporte")
 
-            # Commit final si no es dry_run
             if not dry_run:
                 self.db.commit()
-                logger.info("\n Cambios guardados en la base de datos")
+                logger.info("\nCambios guardados en la base de datos")
             else:
                 self.db.rollback()
-                logger.info("\n DRY RUN: Cambios revertidos (modo simulación)")
+                logger.info("\nDRY RUN: Cambios revertidos (modo simulación)")
 
             return self._generar_reporte_exitoso()
 
         except Exception as e:
-            logger.error(f"\n ERROR CRÍTICO: {str(e)}")
+            logger.error(f"\nERROR CRÍTICO: {str(e)}")
             self.db.rollback()
             self.resultados["errores"].append({
                 "tipo": "error_critico",
@@ -189,10 +148,7 @@ class InicializacionSistemaService:
 
         return estado
 
-    def _validar_prerequisitos(
-        self,
-        responsable_id: int
-    ) -> Dict[str, Any]:
+    def _validar_prerequisitos(self, responsable_id: int) -> Dict[str, Any]:
         """Valida que se cumplan los pre-requisitos."""
         errores = []
 
@@ -211,11 +167,7 @@ class InicializacionSistemaService:
         logger.info("    Todos los pre-requisitos cumplidos")
         return {"valido": True, "errores": []}
 
-    def _autoconfigurar_asignaciones(
-        self,
-        responsable_default_id: int,
-        dry_run: bool
-    ) -> Dict[str, Any]:
+    def _autoconfigurar_asignaciones(self, responsable_default_id: int, dry_run: bool) -> Dict[str, Any]:
         """Auto-configura asignaciones NIT-Usuario basándose en proveedores existentes."""
         from app.models.proveedor import Proveedor
 
@@ -292,11 +244,7 @@ class InicializacionSistemaService:
 
         return None
 
-    def _vincular_facturas_masivo(
-        self,
-        año_fiscal: int,
-        dry_run: bool
-    ) -> Dict[str, Any]:
+    def _vincular_facturas_masivo(self, año_fiscal: int, dry_run: bool) -> Dict[str, Any]:
         """Vincula facturas existentes con líneas de presupuesto."""
 
         vinculador = AutoVinculador(self.db)
@@ -362,7 +310,7 @@ class InicializacionSistemaService:
     def _generar_reporte_exitoso(self) -> Dict[str, Any]:
         """Genera reporte de éxito."""
         logger.info("\n" + "=" * 80)
-        logger.info(" INICIALIZACIÓN COMPLETADA EXITOSAMENTE")
+        logger.info("INICIALIZACIÓN COMPLETADA EXITOSAMENTE")
         logger.info("=" * 80)
         logger.info(f"Duración total: {self.resultados['duracion_segundos']:.2f} segundos")
         logger.info(f"Pasos completados: {len(self.resultados['pasos_completados'])}")
@@ -375,10 +323,10 @@ class InicializacionSistemaService:
     def _generar_reporte_error(self, errores: List[str]) -> Dict[str, Any]:
         """Genera reporte de error."""
         logger.error("\n" + "=" * 80)
-        logger.error(" INICIALIZACIÓN FALLIDA")
+        logger.error("INICIALIZACIÓN FALLIDA")
         logger.error("=" * 80)
         for error in errores:
-            logger.error(f"   - {error}")
+            logger.error(f"  - {error}")
 
         return {
             "exito": False,

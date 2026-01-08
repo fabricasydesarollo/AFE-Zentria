@@ -7,9 +7,8 @@ import enum
 
 class EstadoFactura(enum.Enum):
     """
-    Estados de factura - FLUJO CONTADOR SIMPLIFICADO (sin Tesorería).
-
-    FASE 0: PRE-PROCESAMIENTO (2025-12-14)
+   
+    FASE 0: PRE-PROCESAMIENTO
     - en_cuarentena: Factura sin grupo_id asignado (requiere configuración manual)
 
     FASE 1: APROBACIÓN (Responsable revisa)
@@ -60,6 +59,10 @@ class Factura(Base):
     proveedor_id = Column(BigInteger, ForeignKey("proveedores.id"), nullable=True)
     subtotal = Column(Numeric(15, 2, asdecimal=True))
     iva = Column(Numeric(15, 2, asdecimal=True))
+    retenciones = Column(Numeric(15, 2, asdecimal=True), nullable=False, server_default='0.00',
+                         comment="Retenciones aplicadas (ReteFuente, ReteIVA, ReteICA, etc.)")
+    pdf_filename = Column(String(255), nullable=True, index=True,
+                         comment="Nombre del archivo PDF (ej: ad08001365050512500067543.pdf) - guardado al extraer")
     estado = Column(Enum(EstadoFactura), default=EstadoFactura.en_revision, nullable=False)
     fecha_vencimiento = Column(Date, nullable=True)
     cufe = Column(String(100), unique=True, nullable=False)

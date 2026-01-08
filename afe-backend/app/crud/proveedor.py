@@ -4,13 +4,11 @@ CRUD de Proveedores - Simplificado
 
 Módulo de acceso a datos para proveedores.
 
-🔒 SEGURIDAD 2025-12-15:
 - Eliminada auto-creación de proveedores por seguridad
 - Solo creación manual desde UI/API
 - Validación y normalización de NITs obligatoria
 
 
-Fecha: 2025-12-15
 """
 
 import logging
@@ -178,7 +176,7 @@ def create_proveedor(db: Session, data: ProveedorBase) -> Proveedor:
         db.refresh(proveedor)
 
         logger.info(
-            f"✅ Proveedor MANUAL creado: ID={proveedor.id}, NIT={proveedor.nit}"
+            f"Proveedor MANUAL creado: ID={proveedor.id}, NIT={proveedor.nit}"
         )
 
         return proveedor
@@ -244,7 +242,7 @@ def update_proveedor(
     db.commit()
     db.refresh(proveedor)
 
-    logger.info(f"✅ Proveedor actualizado: ID={proveedor_id}")
+    logger.info(f"Proveedor actualizado: ID={proveedor_id}")
 
     return proveedor
 
@@ -276,7 +274,7 @@ def delete_proveedor(db: Session, proveedor_id: int) -> bool:
     db.delete(proveedor)
     db.commit()
 
-    logger.info(f"✅ Proveedor eliminado: ID={proveedor_id}")
+    logger.info(f"Proveedor eliminado: ID={proveedor_id}")
 
     return True
 

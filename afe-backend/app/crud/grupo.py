@@ -10,8 +10,7 @@ Características:
 - Validaciones de integridad jerárquica
 - Soft delete
 
-Autor: Sistema AFE Backend
-Fecha: 2025-12-02
+
 """
 
 import logging

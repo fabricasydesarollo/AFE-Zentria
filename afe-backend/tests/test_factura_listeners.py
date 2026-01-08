@@ -9,7 +9,7 @@ Casos de prueba:
 3. Cambio de estado a 'aprobada' → accion_por = nombre del responsable
 4. Cambio de estado a 'en_revision' → accion_por = NULL
 
-Fecha: 2025-12-15
+
 """
 
 import pytest

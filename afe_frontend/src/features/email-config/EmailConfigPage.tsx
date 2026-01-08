@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import {
   Box,
@@ -24,10 +24,6 @@ import {
   Alert,
   CircularProgress,
   Stack,
-  Divider,
-  Badge,
-  Tabs,
-  Tab,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -43,7 +39,6 @@ import {
   Business as BusinessIcon,
   Numbers as NumbersIcon,
   Clear as ClearIcon,
-  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -57,12 +52,10 @@ import {
 } from './emailConfigSlice';
 import CreateCuentaDialog from './components/CreateCuentaDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { CuarentenaTab } from './components/CuarentenaTab';
 
 const EmailConfigPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const { cuentas, loadingCuentas, filtros, error } = useAppSelector(
     (state) => state.emailConfig
@@ -71,20 +64,6 @@ const EmailConfigPage: React.FC = () => {
   const [dialogCrearOpen, setDialogCrearOpen] = useState(false);
   const [cuentaAEliminar, setCuentaAEliminar] = useState<number | null>(null);
   const [searchLocal, setSearchLocal] = useState('');
-
-  // Tab management con URL query params
-  const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam === 'cuarentena' ? 1 : 0);
-
-  // Sincronizar tab con URL query params
-  useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'cuarentena') {
-      setActiveTab(1);
-    } else {
-      setActiveTab(0);
-    }
-  }, [searchParams]);
 
   // Cargar cuentas al montar
   useEffect(() => {
@@ -121,26 +100,6 @@ const EmailConfigPage: React.FC = () => {
 
   const handleRefresh = () => {
     dispatch(cargarCuentas({ solo_activas: filtros.solo_activas }));
-  };
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-    // Actualizar URL query param
-    if (newValue === 1) {
-      setSearchParams({ tab: 'cuarentena' });
-    } else {
-      setSearchParams({});
-    }
-  };
-
-  const handleSwitchToConfig = (nit?: string) => {
-    // Cambiar al tab de configuración (tab 0)
-    setActiveTab(0);
-    setSearchParams({});
-    // Si viene con NIT, pre-llenar búsqueda
-    if (nit) {
-      setSearchLocal(nit);
-    }
   };
 
   // Estadísticas globales
@@ -433,45 +392,10 @@ const EmailConfigPage: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Tabs Navigation */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '1rem',
-                minHeight: 56,
-                px: 3,
-              },
-              '& .Mui-selected': {
-                color: zentriaColors.violeta.main,
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: zentriaColors.violeta.main,
-                height: 3,
-              },
-            }}
-          >
-            <Tab
-              label="Cuentas de Correo"
-              icon={<EmailIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Facturas en Cuarentena"
-              icon={<WarningIcon />}
-              iconPosition="start"
-            />
-          </Tabs>
-        </Box>
       </Box>
 
-      {/* Tab Panel 0: Cuentas de Correo */}
-      {activeTab === 0 && (
-        <Box>
+      {/* Contenido Principal: Cuentas de Correo */}
+      <Box>
           {/* Filtros y Búsqueda */}
           <Card
           elevation={0}
@@ -833,13 +757,7 @@ const EmailConfigPage: React.FC = () => {
             )}
           </Box>
         )}
-        </Box>
-      )}
-
-      {/* Tab Panel 1: Facturas en Cuarentena */}
-      {activeTab === 1 && (
-        <CuarentenaTab onSwitchToConfig={handleSwitchToConfig} />
-      )}
+      </Box>
 
       {/* Dialog Crear Cuenta */}
       <CreateCuentaDialog

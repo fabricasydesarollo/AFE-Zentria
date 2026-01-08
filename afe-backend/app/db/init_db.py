@@ -15,29 +15,29 @@ def create_default_roles_and_admin(db: Session):
             logger.info("Rol creado: %s", role_name)
     db.commit()
 
-    # === Crear usuario admin si no existe ===
-    admin = db.query(Usuario).filter(Usuario.usuario == "admin").first()
-    if not admin:
+    # === Crear usuario SUPER ADMIN si no existe ===
+    super_admin = db.query(Usuario).filter(Usuario.usuario == "super.admin").first()
+    if not super_admin:
         # Verificar si el email ya existe
-        email_exists = db.query(Usuario).filter(Usuario.email == "jhontaimal@gmail.com").first()
+        email_exists = db.query(Usuario).filter(Usuario.email == "afe.sa01@outlook.es").first()
         if email_exists:
-            logger.info("Email jhontaimal@gmail.com ya está asociado a otro usuario, saltando creación de admin")
+            logger.info("Email afe.sa01@outlook.es ya está asociado a otro usuario, saltando creación de super admin")
         else:
             # buscar el rol admin
             admin_role = db.query(Role).filter(Role.nombre == "admin").first()
 
-            admin = Usuario(
-                usuario="admin",
-                nombre="John Alex",
-                email="jhontaimal@gmail.com",
-                hashed_password=hash_password("87654321"),
+            super_admin = Usuario(
+                usuario="super.admin",
+                nombre="Super Admin",
+                email="afe.sa01@outlook.es",
+                hashed_password=hash_password("Prueba1234"),
                 activo=True,
                 role_id=admin_role.id if admin_role else None,
                 must_change_password=True  # <-- mejora para seguridad
             )
-            db.add(admin)
+            db.add(super_admin)
             db.commit()
-            db.refresh(admin)
-            logger.info("Admin creado: %s", admin.usuario)
+            db.refresh(super_admin)
+            logger.info("Super Admin creado: %s", super_admin.usuario)
     else:
-        logger.info("Admin ya existe: %s", admin.usuario)
+        logger.info("Super Admin ya existe: %s", super_admin.usuario)

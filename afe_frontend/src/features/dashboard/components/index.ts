@@ -10,3 +10,4 @@ export * from './FacturaFormModal';
 export * from './FacturaActionsMenu';
 export * from './ChartsSection';
 export * from './AlertaMes';
+export * from './CuarentenaAlert';

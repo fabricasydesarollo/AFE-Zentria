@@ -1,13 +1,5 @@
 # app/services/email_template_service.py
-"""
-Servicio de renderizado de templates de email con Jinja2.
-
-Templates profesionales para:
-- Aprobación automática
-- Revisión requerida
-- Error crítico
-- Resumen diario
-"""
+"""Servicio de renderizado de templates de email con Jinja2."""
 
 import logging
 from pathlib import Path
@@ -19,11 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class EmailTemplateService:
-    """
-    Servicio de renderizado de templates de email.
-
-    Usa Jinja2 para renderizar templates HTML profesionales.
-    """
+    """Servicio de renderizado de templates de email."""
 
     def __init__(self):
         # Directorio de templates (app/templates/emails/)
@@ -66,26 +54,7 @@ class EmailTemplateService:
         return f"{value.day} de {meses[value.month - 1]} de {value.year}"
 
     def render_aprobacion_automatica(self, data: Dict[str, Any]) -> tuple[str, str]:
-        """
-        Renderiza email de aprobación automática.
-
-        Args:
-            data: Diccionario con datos de la factura
-                - numero_factura
-                - proveedor_nombre
-                - monto
-                - fecha_emision
-                - concepto
-                - confianza
-                - patron_detectado
-                - factura_referencia
-                - variacion_monto
-                - criterios_cumplidos (list)
-                - responsable_nombre
-
-        Returns:
-            (html_body, text_body)
-        """
+        """Renderiza email de aprobación automática."""
         try:
             template = self.env.get_template('aprobacion_automatica.html')
             html = template.render(**data)
@@ -100,27 +69,7 @@ class EmailTemplateService:
             return self._fallback_aprobacion_html(data), self._fallback_aprobacion_text(data)
 
     def render_revision_requerida(self, data: Dict[str, Any]) -> tuple[str, str]:
-        """
-        Renderiza email de revisión requerida.
-
-        Args:
-            data: Diccionario con datos de la factura
-                - numero_factura
-                - proveedor_nombre
-                - monto
-                - fecha_emision
-                - concepto
-                - motivo_revision (str o list)
-                - alertas (list)
-                - contexto_historico (dict)
-                - confianza
-                - responsable_nombre
-                - url_aprobar
-                - url_rechazar
-
-        Returns:
-            (html_body, text_body)
-        """
+        """Renderiza email de revisión requerida."""
         try:
             template = self.env.get_template('revision_requerida.html')
             html = template.render(**data)
@@ -135,21 +84,7 @@ class EmailTemplateService:
             return self._fallback_revision_html(data), self._fallback_revision_text(data)
 
     def render_error_critico(self, data: Dict[str, Any]) -> tuple[str, str]:
-        """
-        Renderiza email de error crítico.
-
-        Args:
-            data: Diccionario con datos del error
-                - numero_factura
-                - proveedor_nombre
-                - error_descripcion
-                - fecha_error
-                - stack_trace (opcional)
-                - responsable_nombre
-
-        Returns:
-            (html_body, text_body)
-        """
+        """Renderiza email de error crítico."""
         try:
             template = self.env.get_template('error_critico.html')
             html = template.render(**data)
@@ -164,19 +99,7 @@ class EmailTemplateService:
             return self._fallback_error_html(data), self._fallback_error_text(data)
 
     def render_template(self, template_name: str, context: Dict[str, Any]) -> str:
-        """
-        Renderiza un template genérico de email.
-
-        Método genérico que funciona con cualquier template HTML existente.
-        Se usa principalmente para notificaciones a contabilidad.
-
-        Args:
-            template_name: Nombre del template (ej: 'factura_aprobada.html')
-            context: Diccionario con variables para el template
-
-        Returns:
-            HTML renderizado
-        """
+        """Renderiza un template genérico de email."""
         try:
             template = self.env.get_template(template_name)
             return template.render(**context)
@@ -196,21 +119,7 @@ class EmailTemplateService:
             """
 
     def render_resumen_diario(self, data: Dict[str, Any]) -> tuple[str, str]:
-        """
-        Renderiza email de resumen diario.
-
-        Args:
-            data: Diccionario con estadísticas
-                - fecha
-                - responsable_nombre
-                - stats (dict con aprobadas_auto, revision, pendientes, rechazadas, tasa, monto_total)
-                - facturas_atencion (list)
-                - facturas_aprobadas (list de últimas 5)
-                - tendencias (dict)
-
-        Returns:
-            (html_body, text_body)
-        """
+        """Renderiza email de resumen diario."""
         try:
             template = self.env.get_template('resumen_diario.html')
             html = template.render(**data)

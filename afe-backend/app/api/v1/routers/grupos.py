@@ -1,22 +1,4 @@
-"""
-Router de Grupos - API Multi-Tenant con Jerarquía
-
-Endpoints para gestión de grupos empresariales con soporte jerárquico.
-
-Endpoints disponibles:
-- GET    /grupos              - Listar grupos con filtros
-- POST   /grupos              - Crear nuevo grupo
-- GET    /grupos/{id}         - Obtener grupo específico
-- PUT    /grupos/{id}         - Actualizar grupo
-- DELETE /grupos/{id}         - Soft delete de grupo
-- POST   /grupos/{id}/restore - Restaurar grupo eliminado
-- GET    /grupos/raiz         - Listar grupos raíz
-- GET    /grupos/{id}/hijos   - Listar hijos de un grupo
-- GET    /grupos/arbol        - Obtener árbol jerárquico
-
-Autor: Sistema AFE Backend
-Fecha: 2025-12-02
-"""
+"""Router de Grupos - API Multi-Tenant con Jerarquía."""
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -43,10 +25,6 @@ from app.utils.logger import logger
 router = APIRouter(tags=["Grupos"])
 
 
-# ================================================================================
-# ENDPOINTS DE LECTURA
-# ================================================================================
-
 @router.get(
     "/",
     response_model=GrupoListResponse,
@@ -64,29 +42,9 @@ def list_all(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista grupos con FILTRADO MULTI-TENANT.
-
-    **SEGURIDAD MULTI-TENANT:**
-    - SuperAdmin: Ve TODOS los grupos del sistema
-    - Admin: Ve SOLO sus grupos asignados (sede + subsedes)
-    - Otros roles: Ve SOLO sus grupos asignados
-
-    **Filtros disponibles:**
-    - `activo`: Filtrar por estado activo/inactivo
-    - `eliminado`: Incluir grupos marcados como eliminados
-    - `grupo_padre_id`: Filtrar hijos de un grupo específico
-    - `nivel`: Filtrar por nivel jerárquico (1=raíz, 2=hijo, etc.)
-    - `codigo_corto`: Buscar por código exacto
-
-    **Respuesta:**
-    - Lista de grupos ordenados por ruta jerárquica
-    - Total de grupos encontrados
-    """
+    """Lista grupos con filtrado multi-tenant por rol."""
     from app.models.grupo import Grupo, ResponsableGrupo
     from app.core.grupos_utils import get_grupos_usuario
-
-    # FILTRADO MULTI-TENANT
     rol_nombre = current_user.role.nombre if current_user.role else "usuario"
 
     if rol_nombre.lower() == "superadmin":
@@ -140,17 +98,7 @@ def list_raiz(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista todos los grupos raíz (sin grupo padre).
-
-    **Uso típico:** Para construir el primer nivel de un árbol jerárquico.
-
-    **Ejemplos de grupos raíz:**
-    - AVIDANTI
-    - ADC
-    - DSZF
-    - CAA
-    """
+    """Lista todos los grupos raíz (sin grupo padre)."""
     grupos = crud_grupo.get_grupos_raiz(db, activos_only=activos_only)
     return grupos
 
@@ -165,15 +113,7 @@ def get_mis_grupos(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene los grupos asignados al usuario actual.
-
-    **Filtrado por rol:**
-    - **SuperAdmin**: Ve todos los grupos activos
-    - **Admin/Usuario**: Solo ve grupos donde está asignado como responsable
-
-    **Uso:** Selector de grupos en formularios multi-tenant
-    """
+    """Obtiene los grupos asignados al usuario actual."""
     from app.models.grupo import ResponsableGrupo, Grupo
 
     # SuperAdmin ve todos los grupos
@@ -208,17 +148,7 @@ def get_arbol(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene el árbol jerárquico de grupos.
-
-    **Parámetros:**
-    - `grupo_id`: Si se proporciona, obtiene el subárbol desde ese grupo
-    - Si es `None`, devuelve todo el árbol
-
-    **Respuesta:**
-    - Lista ordenada por ruta jerárquica
-    - Permite reconstruir el árbol en el frontend
-    """
+    """Obtiene el árbol jerárquico de grupos."""
     grupos = crud_grupo.get_arbol_jerarquico(db, grupo_id=grupo_id)
     return grupos
 
@@ -236,14 +166,7 @@ def get_one(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Obtiene un grupo por su ID.
-
-    **Respuesta incluye:**
-    - Todos los campos del grupo
-    - Información de auditoría
-    - Datos de jerarquía (nivel, ruta, padre)
-    """
+    """Obtiene un grupo por su ID."""
     grupo = crud_grupo.get_grupo(db, grupo_id, include_deleted=include_deleted)
     if not grupo:
         raise HTTPException(
@@ -266,15 +189,7 @@ def get_hijos(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista todos los hijos directos de un grupo.
-
-    **Ejemplo:**
-    - Para AVIDANTI (id=1), devuelve: CAM, CAI, CASM
-    - No devuelve nietos (solo hijos directos)
-
-    **Uso típico:** Para navegación jerárquica incremental.
-    """
+    """Lista todos los hijos directos de un grupo."""
     # Verificar que el grupo padre existe
     padre = crud_grupo.get_grupo(db, grupo_id)
     if not padre:
@@ -286,10 +201,6 @@ def get_hijos(
     hijos = crud_grupo.get_hijos(db, grupo_id, activos_only=activos_only)
     return hijos
 
-
-# ================================================================================
-# ENDPOINTS DE ESCRITURA
-# ================================================================================
 
 @router.post(
     "/",
@@ -304,21 +215,7 @@ def create(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Crea un nuevo grupo.
-
-    **Validaciones automáticas:**
-    - Código corto único
-    - Grupo padre existe (si se proporciona)
-    - Grupo padre permite subsedes
-    - No se excede max_nivel_subsedes
-
-    **Cálculo automático:**
-    - `nivel`: Calculado según el padre
-    - `ruta_jerarquica`: Construida automáticamente
-
-    **Requiere rol:** superadmin o admin
-    """
+    """Crea un nuevo grupo."""
     try:
         nuevo_grupo = crud_grupo.create_grupo(
             db,
@@ -347,25 +244,7 @@ def update(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Actualiza un grupo existente.
-
-    **Campos actualizables:**
-    - nombre
-    - codigo_corto (validando unicidad)
-    - descripcion
-    - correos_corporativos
-    - permite_subsedes
-    - max_nivel_subsedes
-    - activo
-
-    **No se puede cambiar:**
-    - grupo_padre_id (jerarquía inmutable)
-    - nivel
-    - ruta_jerarquica
-
-    **Requiere rol:** superadmin o admin
-    """
+    """Actualiza un grupo existente."""
     try:
         grupo = crud_grupo.update_grupo(
             db,
@@ -400,18 +279,7 @@ def delete(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Realiza soft delete de un grupo.
-
-    **Validaciones:**
-    - No puede tener hijos activos
-    - Se marca como `eliminado=True` y `activo=False`
-    - Se registra fecha y usuario que eliminó
-
-    **Nota:** El grupo puede ser restaurado posteriormente.
-
-    **Requiere rol:** superadmin o admin
-    """
+    """Realiza soft delete de un grupo."""
     try:
         grupo = crud_grupo.soft_delete_grupo(
             db,
@@ -445,16 +313,7 @@ def restore(
     db: Session = Depends(get_db),
     current_user=Depends(require_role("admin")),
 ):
-    """
-    Restaura un grupo eliminado.
-
-    **Acción:**
-    - Marca `eliminado=False` y `activo=True`
-    - Limpia campos de eliminación
-    - Registra usuario que restauró
-
-    **Requiere rol:** admin
-    """
+    """Restaura un grupo eliminado."""
     grupo = crud_grupo.restore_grupo(
         db,
         grupo_id=grupo_id,
@@ -473,10 +332,6 @@ def restore(
     return grupo
 
 
-# ================================================================================
-# ENDPOINTS DE RESPONSABLE-GRUPO (Asignación Usuarios-Grupos)
-# ================================================================================
-
 @router.post(
     "/{grupo_id}/responsables",
     response_model=ResponsableGrupoResponse,
@@ -491,16 +346,7 @@ def asignar_responsable(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Asigna un usuario responsable a un grupo.
-
-    **Validaciones:**
-    - El grupo debe existir
-    - El usuario debe existir
-    - Si ya existe la asignación, se reactiva si estaba inactiva
-
-    **Requiere rol:** superadmin o admin
-    """
+    """Asigna un usuario responsable a un grupo."""
     try:
         asignacion = crud_grupo.asignar_responsable_a_grupo(
             db=db,
@@ -536,14 +382,7 @@ def listar_responsables(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista todos los responsables asignados a un grupo.
-
-    **Respuesta incluye:**
-    - Información de la asignación
-    - Datos del responsable (nombre, email)
-    - Datos del grupo (nombre, código)
-    """
+    """Lista todos los responsables asignados a un grupo."""
     from app.models.usuario import Usuario
     from app.models.grupo import Grupo
 
@@ -601,13 +440,7 @@ def remover_responsable(
     db: Session = Depends(get_db),
     current_user=Depends(require_role(["superadmin", "admin"])),
 ):
-    """
-    Desactiva la asignación de un responsable a un grupo.
-
-    **Nota:** No elimina físicamente, solo marca como inactivo.
-
-    **Requiere rol:** superadmin o admin
-    """
+    """Desactiva la asignación de un responsable a un grupo."""
     success = crud_grupo.remover_responsable_de_grupo(
         db=db,
         responsable_id=responsable_id,
@@ -643,11 +476,7 @@ def listar_grupos_responsable(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_usuario),
 ):
-    """
-    Lista todos los grupos asignados a un responsable.
-
-    **Uso típico:** Para mostrar en perfil de usuario los grupos a los que pertenece.
-    """
+    """Lista todos los grupos asignados a un responsable."""
     from app.models.usuario import Usuario
     from app.models.grupo import Grupo
 
@@ -705,13 +534,7 @@ def actualizar_asignacion(
     db: Session = Depends(get_db),
     current_user=Depends(require_role("admin")),
 ):
-    """
-    Actualiza el estado de una asignación.
-
-    **Permite:** Activar/desactivar asignaciones existentes.
-
-    **Requiere rol:** admin
-    """
+    """Actualiza el estado de una asignación."""
     asignacion = crud_grupo.actualizar_estado_asignacion(
         db=db,
         asignacion_id=asignacion_id,

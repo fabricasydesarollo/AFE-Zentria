@@ -255,7 +255,8 @@ class IngestService:
             # Procesar cada factura del batch
             for idx, factura in batch:
                 try:
-                    factura_service.procesar_factura(factura)
+                    cuenta_correo_id = factura.get('cuenta_correo_id')
+                    factura_service.procesar_factura(factura, cuenta_correo_id=cuenta_correo_id)
                     batch_stats['exitosas'] += 1
                     
                     # Log detallado solo en modo debug

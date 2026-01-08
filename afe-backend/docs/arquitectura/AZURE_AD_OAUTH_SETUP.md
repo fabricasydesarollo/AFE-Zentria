@@ -74,7 +74,7 @@ Directory (tenant) ID:
    Expires: 24 months (recomendado)
    ```
 4. Clic en **"Add"**
-5. **⚠️ IMPORTANTE:** Copia el **Value** inmediatamente (solo se muestra una vez)
+5. **IMPORTANTE:** Copia el **Value** inmediatamente (solo se muestra una vez)
    ```
    Ejemplo: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
    ```

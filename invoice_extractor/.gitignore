@@ -162,6 +162,9 @@ output/
 !package.json
 !tsconfig.json
 
+# Checkpoints de ejecución (cada instalación maneja sus propios checkpoints)
+.checkpoints/
+
 # Adjuntos pueden contener datos sensibles
 adjuntos/
 

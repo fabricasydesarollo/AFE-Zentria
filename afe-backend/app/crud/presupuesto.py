@@ -1,5 +1,5 @@
 """
-CRUD operations para el sistema de control presupuestal empresarial
+CRUD operations para el sistema de control presupuestal
 """
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date

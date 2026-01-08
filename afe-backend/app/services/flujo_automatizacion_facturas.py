@@ -1,15 +1,8 @@
 """
-Servicio Empresarial de Automatización Completa del Flujo de Facturas.
+Servicio de automatización del flujo de facturas.
 
-Este servicio orquesta todo el flujo de automatización mensual de facturas:
-1. Marcar facturas como pagadas en BD
-2. Análisis de patrones históricos
-3. Comparación con mes anterior
-4. Aprobación automática o marcado para revisión
-5. Notificaciones a usuarios
-
-
-Fecha: 2025-10-09
+Orquesta el flujo de automatización mensual: análisis de patrones,
+comparación con histórico, aprobación automática y notificaciones.
 """
 
 import logging
@@ -33,29 +26,13 @@ logger = logging.getLogger(__name__)
 
 
 class FlujoAutomatizacionFacturas:
-    """
-    Orquestador principal del flujo de automatización mensual de facturas.
-
-    Flujo completo:
-    1. Marcar facturas pagadas en BD
-    2. Analizar patrones históricos
-    3. Comparar facturas pendientes con mes anterior
-    4. Aprobar automáticamente o marcar para revisión
-    5. Enviar notificaciones
-    """
+    """Orquestador principal del flujo de automatización mensual de facturas."""
 
     def __init__(self, db: Session):
-        """
-        Inicializa el servicio de automatización.
-
-        Args:
-            db: Sesión de base de datos SQLAlchemy
-        """
         self.db = db
         self.analizador_patrones = AnalizadorPatronesService(db)
         self.notification_service = NotificacionService(db)
 
-        # Estadísticas del flujo
         self.stats = {
             'facturas_marcadas_pagadas': 0,
             'facturas_pendientes_analizadas': 0,
@@ -65,33 +42,12 @@ class FlujoAutomatizacionFacturas:
             'errores': 0
         }
 
-    # ============================================================================
-    # PASO 1: MARCAR FACTURAS COMO PAGADAS
-    # ============================================================================
-    # NOTA: Métodos relacionados con pagos fueron eliminados.
-    # Los pagos son responsabilidad de Tesorería (sistema externo).
-    # Este sistema solo maneja: aprobación → validación contable.
-    # ============================================================================
-
-    # ============================================================================
-    # PASO 2: COMPARACIÓN Y APROBACIÓN AUTOMÁTICA
-    # ============================================================================
-
     def ejecutar_flujo_automatizacion_completo(
         self,
         periodo_analisis: Optional[str] = None,
         solo_proveedores: Optional[List[int]] = None
     ) -> Dict[str, Any]:
-        """
-        Ejecuta el flujo completo de automatización mensual.
-
-        Args:
-            periodo_analisis: Período a analizar (formato YYYY-MM)
-            solo_proveedores: IDs de proveedores específicos a procesar
-
-        Returns:
-            Dict con resultados completos del flujo
-        """
+        """Ejecuta el flujo completo de automatización mensual."""
         logger.info("=" * 80)
         logger.info("INICIANDO FLUJO COMPLETO DE AUTOMATIZACION DE FACTURAS")
         logger.info("=" * 80)
@@ -135,7 +91,6 @@ class FlujoAutomatizacionFacturas:
             'resultado': resultado_notificaciones
         })
 
-        # Resumen final
         resultado_final['resumen'] = self._generar_resumen_final()
 
         logger.info("\n" + "=" * 80)
@@ -155,29 +110,12 @@ class FlujoAutomatizacionFacturas:
         periodo_analisis: Optional[str] = None,
         solo_proveedores: Optional[List[int]] = None
     ) -> Dict[str, Any]:
-        """
-        Compara facturas pendientes con mes anterior y decide aprobación.
-
-        Lógica:
-        - Si la factura tiene un patrón histórico (TIPO_A o TIPO_B elegible)
-        - Y el monto actual está dentro del rango esperado
-        - Entonces se aprueba automáticamente
-        - De lo contrario, se marca para revisión
-
-        Args:
-            periodo_analisis: Período a analizar (formato YYYY-MM)
-            solo_proveedores: IDs de proveedores específicos
-
-        Returns:
-            Dict con resultados de la comparación
-        """
+        """Compara facturas pendientes con mes anterior y decide aprobación."""
         logger.info(" Comparando facturas pendientes con patrones históricos...")
 
-        # Determinar período actual
         if not periodo_analisis:
             periodo_analisis = datetime.now().strftime('%Y-%m')
 
-        # Obtener facturas pendientes del período
         facturas_pendientes = self._obtener_facturas_pendientes(
             periodo_analisis,
             solo_proveedores
@@ -193,12 +131,10 @@ class FlujoAutomatizacionFacturas:
                 decision = self._decidir_aprobacion_factura(factura)
 
                 if decision['aprobar_automaticamente']:
-                    # Aprobar automáticamente
                     self._aprobar_factura_automaticamente(factura, decision)
                     facturas_aprobadas.append(decision)
                     self.stats['facturas_aprobadas_auto'] += 1
                 else:
-                    # Marcar para revisión
                     self._marcar_para_revision(factura, decision)
                     facturas_revision.append(decision)
                     self.stats['facturas_requieren_revision'] += 1
@@ -209,7 +145,6 @@ class FlujoAutomatizacionFacturas:
                 logger.error(f"    Error procesando factura {factura.id}: {str(e)}")
                 self.stats['errores'] += 1
 
-        # Commit de cambios
         self.db.commit()
 
         return {
@@ -227,19 +162,7 @@ class FlujoAutomatizacionFacturas:
         periodo: str,
         solo_proveedores: Optional[List[int]]
     ) -> List[Factura]:
-        """
-        Obtiene facturas pendientes del período especificado.
-
-        IMPORTANTE: El período se calcula desde fecha_emision usando DateHelper
-        para garantizar consistencia en toda la aplicación.
-
-        Args:
-            periodo: str en formato "YYYY-MM"
-            solo_proveedores: opcional, list de IDs de proveedores a filtrar
-
-        Returns:
-            List[Factura]: Facturas pendientes del período
-        """
+        """Obtiene facturas pendientes del período especificado."""
         query = self.db.query(Factura).filter(
             Factura.estado == EstadoFactura.en_revision,
             DateHelper.create_periodo_filter(Factura.fecha_emision, periodo),
@@ -252,23 +175,10 @@ class FlujoAutomatizacionFacturas:
         return query.all()
 
     def _decidir_aprobacion_factura(self, factura: Factura) -> Dict[str, Any]:
-        """
-        Decide si una factura debe aprobarse automáticamente.
-
-        Criterios:
-        1. Buscar patrón histórico para proveedor + concepto
-        2. Verificar si el patrón es auto-aprobable
-        3. Verificar si el monto actual está dentro del rango esperado
-        4. Calcular confianza de la decisión
-
-        Returns:
-            Dict con decisión y justificación
-        """
-        # Obtener concepto normalizado
+        """Decide si una factura debe aprobarse automáticamente basándose en patrones históricos."""
         concepto_normalizado = factura.concepto_normalizado or "servicio_general"
         concepto_hash = hashlib.md5(concepto_normalizado.encode('utf-8')).hexdigest()
 
-        # Buscar patrón histórico
         patron = self.db.query(PatronesFacturas).filter(
             PatronesFacturas.proveedor_id == factura.proveedor_id,
             PatronesFacturas.concepto_hash == concepto_hash
@@ -289,14 +199,12 @@ class FlujoAutomatizacionFacturas:
         }
 
         if not patron:
-            # No hay patrón histórico
             decision['motivo'] = "Sin historial previo - Requiere revisión manual"
             return decision
 
         decision['patron_id'] = patron.id
         decision['monto_esperado'] = float(patron.monto_promedio)
 
-        # Verificar si el patrón es auto-aprobable
         if patron.puede_aprobar_auto != 1:
             decision['motivo'] = f"Patrón {patron.tipo_patron.value} no cumple criterios de auto-aprobación"
             return decision
@@ -309,12 +217,9 @@ class FlujoAutomatizacionFacturas:
 
         decision['desviacion_porcentual'] = float(desviacion_porcentual)
 
-        # Verificar si está dentro del umbral de alerta
         if desviacion_porcentual <= patron.umbral_alerta:
-            # APROBAR AUTOMÁTICAMENTE
             decision['aprobar_automaticamente'] = True
 
-            # Calcular confianza
             if patron.tipo_patron == TipoPatron.TIPO_A:
                 confianza = 0.95 if desviacion_porcentual < 5 else 0.85
             elif patron.tipo_patron == TipoPatron.TIPO_B:
@@ -326,7 +231,6 @@ class FlujoAutomatizacionFacturas:
             decision['motivo'] = f"Patrón {patron.tipo_patron.value}: Monto dentro del rango esperado (±{patron.umbral_alerta}%)"
 
         else:
-            # REQUIERE REVISIÓN
             decision['aprobar_automaticamente'] = False
             decision['motivo'] = f"Desviación {desviacion_porcentual:.1f}% excede umbral {patron.umbral_alerta}%"
 
@@ -337,9 +241,7 @@ class FlujoAutomatizacionFacturas:
         factura: Factura,
         decision: Dict[str, Any]
     ) -> None:
-        """
-        Aprueba una factura automáticamente y registra información.
-        """
+        """Aprueba una factura automáticamente y registra información."""
         factura.estado = EstadoFactura.aprobada_auto
         factura.aprobada_automaticamente = True
         factura.confianza_automatica = Decimal(str(decision['confianza']))
@@ -347,8 +249,6 @@ class FlujoAutomatizacionFacturas:
         factura.factura_referencia_id = decision['patron_id']
         factura.fecha_procesamiento_auto = datetime.utcnow()
         factura.actualizado_en = datetime.utcnow()
-
-        # 🔥 SINCRONIZAR ACCION_POR (Single Source of Truth)
         factura.accion_por = 'Sistema Automático'
 
         logger.info(f"     APROBADA AUTO: {factura.numero_factura} - {decision['motivo']}")
@@ -358,9 +258,7 @@ class FlujoAutomatizacionFacturas:
         factura: Factura,
         decision: Dict[str, Any]
     ) -> None:
-        """
-        Marca una factura para revisión manual.
-        """
+        """Marca una factura para revisión manual."""
         factura.estado = EstadoFactura.en_revision
         factura.aprobada_automaticamente = False
         factura.motivo_decision = decision['motivo']
@@ -370,26 +268,13 @@ class FlujoAutomatizacionFacturas:
 
         logger.info(f"     REVISIÓN: {factura.numero_factura} - {decision['motivo']}")
 
-    # ============================================================================
-    # PASO 3: NOTIFICACIONES
-    # ============================================================================
-
     def enviar_notificaciones_responsables(
         self,
         resultado_comparacion: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        Envía notificaciones a los usuarios sobre facturas procesadas.
+        """Envía notificaciones a los usuarios sobre facturas procesadas."""
+        logger.info("Enviando notificaciones a usuarios...")
 
-        Args:
-            resultado_comparacion: Resultado del paso de comparación
-
-        Returns:
-            Dict con resultado del envío de notificaciones
-        """
-        logger.info("📧 Enviando notificaciones a usuarios...")
-
-        # Agrupar facturas por responsable
         facturas_por_responsable = self._agrupar_facturas_por_responsable(
             resultado_comparacion
         )
@@ -398,11 +283,7 @@ class FlujoAutomatizacionFacturas:
 
         for responsable_id, datos in facturas_por_responsable.items():
             try:
-                # Preparar mensaje
                 mensaje = self._preparar_mensaje_notificacion(datos)
-
-                # Aquí se enviaría el correo electrónico
-                # self.notification_service.send_email(...)
 
                 notificaciones_enviadas.append({
                     'responsable_id': responsable_id,
@@ -430,12 +311,9 @@ class FlujoAutomatizacionFacturas:
         self,
         resultado_comparacion: Dict[str, Any]
     ) -> Dict[int, Dict[str, Any]]:
-        """
-        Agrupa facturas por responsable para notificaciones.
-        """
+        """Agrupa facturas por responsable para notificaciones."""
         facturas_por_responsable = {}
 
-        # Procesar facturas aprobadas
         for factura_data in resultado_comparacion.get('aprobadas_automaticamente', []):
             factura = self.db.query(Factura).get(factura_data['factura_id'])
             if factura and factura.responsable_id:
@@ -448,7 +326,6 @@ class FlujoAutomatizacionFacturas:
                     }
                 facturas_por_responsable[factura.responsable_id]['aprobadas'].append(factura_data)
 
-        # Procesar facturas en revisión
         for factura_data in resultado_comparacion.get('requieren_revision', []):
             factura = self.db.query(Factura).get(factura_data['factura_id'])
             if factura and factura.responsable_id:
@@ -464,9 +341,7 @@ class FlujoAutomatizacionFacturas:
         return facturas_por_responsable
 
     def _preparar_mensaje_notificacion(self, datos: Dict[str, Any]) -> str:
-        """
-        Prepara el mensaje de notificación para el usuario.
-        """
+        """Prepara el mensaje de notificación para el usuario."""
         mensaje = f"""
 Hola {datos['nombre']},
 
@@ -495,10 +370,6 @@ Sistema de Automatización de Facturas AFE
 """
 
         return mensaje
-
-    # ============================================================================
-    # UTILIDADES
-    # ============================================================================
 
     def _generar_resumen_final(self) -> Dict[str, Any]:
         """Genera resumen final del flujo."""

@@ -15,7 +15,6 @@ VENTAJAS:
 4. Fácil de testear
 5. No requiere código SQL duplicado
 
-Fecha: 2025-12-15
 """
 
 from sqlalchemy import event

@@ -106,7 +106,7 @@ def downgrade() -> None:
     """
     Revierte los cambios de auditoría.
 
-    ⚠️  ADVERTENCIA: Esto eliminará datos de auditoría permanentemente.
+     ADVERTENCIA: Esto eliminará datos de auditoría permanentemente.
     Solo usar en desarrollo o con backup completo.
     """
     # Eliminar índice

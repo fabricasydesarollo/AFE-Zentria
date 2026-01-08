@@ -8,7 +8,7 @@ Sistema de automatización inteligente que:
 - Gestiona flujo de aprobación manual
 - Genera notificaciones y trazabilidad completa
 
-Nivel: Enterprise Automation
+
 """
 
 from sqlalchemy import (
@@ -285,8 +285,8 @@ class AsignacionNitResponsable(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     nit = Column(String(20), nullable=False, index=True, comment="NIT del proveedor")
-    # ❌ ELIMINADO: nombre_proveedor (campo cache, violaba SSOT)
-    # ✅ NUEVO: Se obtiene mediante relación con Proveedor
+    #  ELIMINADO: nombre_proveedor (campo cache, violaba SSOT)
+    # NUEVO: Se obtiene mediante relación con Proveedor
 
     responsable_id = Column(BigInteger, ForeignKey("usuarios.id"), nullable=False, index=True)
     area = Column(String(100), nullable=True, comment="Área responsable (TI, Operaciones, etc.)")
@@ -369,7 +369,7 @@ class AsignacionNitResponsable(Base):
     # Relación con Grupo (multi-tenant)
     grupo = relationship("Grupo", back_populates="asignaciones_nit", lazy="joined")
     
-    # ✅ NUEVA RELACIÓN: Proveedor (SSOT para razon_social)
+    # NUEVA RELACIÓN: Proveedor (SSOT para razon_social)
     # Eager loading (lazy="joined") para obtener razon_social en mismo query
     # Esto evita N+1 queries y mantiene performance óptima
     proveedor = relationship(
@@ -437,20 +437,7 @@ class NotificacionWorkflow(Base):
 
 
 class AlertaAprobacionAutomatica(Base):
-    """
-    Sistema de Alertas Tempranas (Early Warning System) para auditoría continua.
-
-    Registra alertas incluso cuando la factura ES aprobada automáticamente,
-    permitiendo auditoría posterior de casos "borderline" o con riesgos moderados.
-
-    Casos de uso:
-    - Factura aprobada con confianza 94.5% (cerca del 95%)
-    - Factura aprobada con items nuevos de bajo valor
-    - Cambios en patrones de proveedores establecidos
-    - Montos cerca del límite máximo configurado
-
-    Nivel: Fortune 500 Compliance & Audit
-    """
+    """Alertas de auditoría para facturas aprobadas automáticamente."""
     __tablename__ = "alertas_aprobacion_automatica"
 
     # Identificación

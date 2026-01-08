@@ -6,7 +6,6 @@ Este módulo contiene funciones helper para:
 - Validar acceso a grupos
 - Aplicar filtros por grupo en queries
 
-Nivel: Fortune 500 Enterprise Security
 """
 
 from typing import List, Optional

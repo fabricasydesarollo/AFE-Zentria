@@ -1,23 +1,9 @@
 # app/services/invoice_service.py
 """
-Servicio de Procesamiento de Facturas - Enterprise Edition
+Servicio de procesamiento y persistencia de facturas.
 
-Usuario de:
-1. Validación de facturas
-2. Deduplicación (CUFE, número+proveedor)
-3. Auto-creación de proveedores (NUEVO)
-4. Persistencia en BD
-5. Activación de workflows
-6. Auditoría completa
-
-Cambios principales (2025-11-06):
-- NUEVO: Auto-creación de proveedores desde facturas
-- NUEVO: Búsqueda y vinculación automática de proveedor_id
-- MEJORADO: Logging estructurado
-- MEJORADO: Manejo de errores robusto
-
-
-Nivel: Enterprise Fortune 500
+Gestiona validación, deduplicación, auto-creación de proveedores,
+y activación de workflows de aprobación.
 """
 
 from sqlalchemy.orm import Session
@@ -41,17 +27,12 @@ def process_and_persist_invoice(
     """
     Procesa y persiste una factura en BD.
 
-    Pasos:
-    1. Validación de datos requeridos
-    2. Intento de auto-creación/búsqueda de proveedor (NUEVO)
-    3. Deduplicación por CUFE
-    4. Deduplicación por número + proveedor
-    5. Creación de nueva factura
-    6. Activación de workflow automático
+    Realiza validación, deduplicación, auto-creación de proveedor si es necesario,
+    y activa el workflow de aprobación.
 
     Args:
         db: Sesión de BD
-        payload: FacturaCreate con datos de la factura
+        payload: Datos de la factura
         created_by: Usuario/sistema que crea
         auto_create_provider: Si True, auto-crea proveedor si no existe
 
@@ -60,20 +41,14 @@ def process_and_persist_invoice(
     """
     data = payload.dict()
 
-    # ============================================================================
-    # PASO 1: VALIDACIÓN
-    # ============================================================================
+    # Validación de campos obligatorios
 
     if data.get("total") is None:
         raise ValueError("El campo 'total' es obligatorio y debe venir en la factura.")
     if data.get("total_a_pagar") is None:
         raise ValueError("El campo 'total_a_pagar' es obligatorio y debe venir en la factura.")
 
-    # ============================================================================
-    # PASO 2: AUTO-CREACIÓN/BÚSQUEDA DE PROVEEDOR (NUEVO)
-    # ============================================================================
-
-    # NUEVO: Si auto_create_provider=True y no hay proveedor_id, intentar crear/buscar
+    # Auto-creación/búsqueda de proveedor
     if auto_create_provider and not data.get("proveedor_id"):
         try:
             nit_proveedor = data.get("nit")
@@ -92,7 +67,6 @@ def process_and_persist_invoice(
                 proveedor = get_proveedor_by_nit(db=db, nit=nit_proveedor)
                 fue_creado = False
 
-                # Si no existe, crear si auto_create_provider está habilitado
                 if not proveedor and auto_create_provider:
                     try:
                         proveedor_data = ProveedorBase(
@@ -123,9 +97,7 @@ def process_and_persist_invoice(
                             },
                             exc_info=True
                         )
-                        # Continuar sin proveedor
 
-                # Si proveedor existe (original o recién creado)
                 if proveedor:
                     data["proveedor_id"] = proveedor.id
                     if not fue_creado:
@@ -147,7 +119,6 @@ def process_and_persist_invoice(
                     "numero_factura": data.get("numero_factura")
                 }
             )
-            # Continuar sin proveedor (factura irá a revisión manual)
 
         except Exception as e:
             logger.error(
@@ -159,12 +130,8 @@ def process_and_persist_invoice(
                 },
                 exc_info=True
             )
-            # Continuar sin proveedor
 
-    # ============================================================================
-    # PASO 3: DEDUPLICACIÓN POR CUFE
-    # ============================================================================
-
+    # Deduplicación por CUFE
     existing = find_by_cufe(db, data["cufe"])
     if existing:
         changed_fields = {}
@@ -180,10 +147,7 @@ def process_and_persist_invoice(
             return {"id": inv.id, "action": "updated"}, "updated"
         return {"id": existing.id, "action": "ignored"}, "ignored"
 
-    # ============================================================================
-    # PASO 4: DEDUPLICACIÓN POR NÚMERO + PROVEEDOR
-    # ============================================================================
-
+    # Deduplicación por número + proveedor
     if data.get("proveedor_id") is not None:
         existing2 = find_by_numero_proveedor(db, data["numero_factura"], data["proveedor_id"])
         if existing2:
@@ -203,10 +167,7 @@ def process_and_persist_invoice(
                 return {"id": existing2.id, "action": "conflict"}, "conflict"
             return {"id": existing2.id, "action": "ignored"}, "ignored"
 
-    # ============================================================================
-    # PASO 4.5: ASIGNAR GRUPO_ID AUTOMÁTICAMENTE (MULTI-TENANT)
-    # ============================================================================
-    # Si grupo_id no se especificó, obtenerlo desde asignacion_nit_responsable
+    # Asignar grupo_id automáticamente desde asignación de NITs
     if data.get("grupo_id") is None and data.get("proveedor_id") is not None:
         try:
             from app.models.proveedor import Proveedor
@@ -215,7 +176,6 @@ def process_and_persist_invoice(
             proveedor = db.query(Proveedor).filter(Proveedor.id == data.get("proveedor_id")).first()
 
             if proveedor and proveedor.nit:
-                # NUEVO: Usar función centralizada para obtener grupo
                 grupo_id = get_grupo_id_por_nit(db, proveedor.nit)
 
                 if grupo_id:
@@ -256,13 +216,8 @@ def process_and_persist_invoice(
                     "numero_factura": data.get("numero_factura")
                 }
             )
-            # Continuar sin grupo (factura irá a cuarentena o será visible solo para superadmin)
 
-    # ============================================================================
-    # PASO 5: CREAR NUEVA FACTURA
-    # ============================================================================
-
-    # IMPORTANTE: Remover 'total' antes de crear (es una propiedad calculada, no columna)
+    # Crear nueva factura (remover 'total' que es propiedad calculada)
     data_para_crear = {k: v for k, v in data.items() if k != 'total'}
     
     inv = create_factura(db, data_para_crear)
@@ -281,13 +236,7 @@ def process_and_persist_invoice(
         }
     )
 
-    # ============================================================================
-    # PASO 7: ACTIVAR WORKFLOW AUTOMÁTICO
-    # ============================================================================
-
-    # ENTERPRISE PATTERN: ACTIVAR WORKFLOW AUTOMÁTICO
-    # El workflow es CRÍTICO para la operación correcta del sistema.
-    # Si falla, debemos saberlo inmediatamente.
+    # Activar workflow automático
     try:
         from app.services.workflow_automatico import WorkflowAutomaticoService
         workflow_service = WorkflowAutomaticoService(db)
@@ -308,7 +257,6 @@ def process_and_persist_invoice(
                 }
             )
         else:
-            # Workflow creado pero con advertencias (ej: NIT sin asignación)
             logger.warning(
                 f"Workflow NO se creó para factura {inv.id}. Resultado: {workflow_resultado}",
                 extra={
@@ -321,7 +269,6 @@ def process_and_persist_invoice(
                 }
             )
 
-            # Registrar en auditoría para visibilidad
             create_audit(
                 db,
                 "workflow",
@@ -337,7 +284,6 @@ def process_and_persist_invoice(
             )
 
     except Exception as e:
-        # ❌ CRITICAL: El workflow falló completamente
         logger.error(
             f"ERROR CRÍTICO al crear workflow para factura {inv.id}: {str(e)}",
             extra={
@@ -349,7 +295,6 @@ def process_and_persist_invoice(
             exc_info=True
         )
 
-        # Registrar en auditoría con severidad alta
         create_audit(
             db,
             "workflow",
@@ -363,10 +308,6 @@ def process_and_persist_invoice(
                 "severity": "CRITICAL"
             }
         )
-
-        # ⚠️ ENTERPRISE DECISION:
-        # NO fallar la creación de la factura (datos financieros no se pierden)
-        # PERO el error queda registrado y visible para corrección manual
 
     return {"id": inv.id, "action": "created"}, "created"
 

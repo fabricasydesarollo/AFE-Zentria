@@ -9,8 +9,6 @@ Gestiona proveedores con soporte para:
 - Rastreo de cambios
 
 
-Fecha: 2025-11-06
-Nivel: Enterprise Fortune 500
 """
 
 from sqlalchemy import Column, BigInteger, String, DateTime, Boolean, text, Index, event

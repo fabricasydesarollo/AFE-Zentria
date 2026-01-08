@@ -1,28 +1,5 @@
 # app/services/accounting_notification_service.py
-"""
-Servicio profesional para notificaciones al equipo de contabilidad.
-
-Este servicio gestiona las notificaciones que se envían a los contadores en:
-1. Aprobación automática (sistema aprueba por similitud)
-2. Aprobación manual (responsable aprueba)
-3. Rechazo manual (responsable rechaza)
-
-Arquitectura:
-- Reutiliza templates existentes de aprobación/rechazo
-- Agrega variable 'destinatario_rol' para personalizar mensaje
-- Obtiene contadores activos del sistema
-- Integra con UnifiedEmailService para envío
-- Usa URLBuilderService centralizado para construcción de URLs
-
-ACTUALIZACIÓN 2025-11-19:
-- Ahora usa URLBuilderService en lugar de settings directos
-- Garantiza consistencia de URLs entre desarrollo y producción
-- Mantiene patrón enterprise-grade
-
-
-Fecha: 2025-11-18
-Nivel: Enterprise-Grade
-"""
+"""Servicio para notificaciones al equipo de contabilidad."""
 
 from typing import List, Optional
 from sqlalchemy.orm import Session
@@ -38,33 +15,15 @@ from datetime import datetime
 
 
 class AccountingNotificationService:
-    """
-    Servicio para enviar notificaciones al equipo de contabilidad.
-
-    Casos de uso:
-    - Factura aprobada automáticamente → notificar contador
-    - Factura aprobada manualmente → notificar contador
-    - Factura rechazada manualmente → notificar contador (para que no la esperen)
-    """
+    """Notifica contadores sobre aprobaciones/rechazos de facturas."""
 
     def __init__(self, db: Session):
-        """
-        Inicializa el servicio.
-
-        Args:
-            db: Sesión de base de datos SQLAlchemy
-        """
         self.db = db
         self.email_service = UnifiedEmailService()
         self.template_service = EmailTemplateService()
 
     def _get_contadores_activos(self) -> List[Usuario]:
-        """
-        Obtiene todos los usuarios con rol 'contador' que están activos.
-
-        Returns:
-            Lista de Responsables con rol contador
-        """
+        """Obtiene usuarios activos con rol contador."""
         try:
             # Obtener contadores usando join con tabla roles
             contadores = (
@@ -97,20 +56,7 @@ class AccountingNotificationService:
         confianza: float,
         factura_referencia_id: Optional[int] = None
     ) -> dict:
-        """
-        Notifica a contadores cuando el SISTEMA aprueba automáticamente una factura.
-
-        Este método se llama desde WorkflowAutomaticoService cuando una factura
-        es aprobada automáticamente por similitud con mes anterior.
-
-        Args:
-            factura: Factura aprobada automáticamente
-            confianza: Nivel de confianza de la aprobación (0.0 - 1.0)
-            factura_referencia_id: ID de factura del mes anterior usada como referencia
-
-        Returns:
-            Dict con resultado
-        """
+        """Notifica contadores cuando el sistema aprueba automáticamente una factura."""
         try:
             contadores = self._get_contadores_activos()
 
@@ -169,7 +115,7 @@ class AccountingNotificationService:
 
                     self.email_service.send_email(
                         to_email=contador.email,
-                        subject=f"✅ Factura {numero_factura} aprobada automáticamente - Lista para procesar",
+                        subject=f"Factura {numero_factura} aprobada automáticamente - Lista para procesar",
                         body_html=html_content
                     )
 
@@ -204,19 +150,7 @@ class AccountingNotificationService:
         aprobada_por: str,
         observaciones: Optional[str] = None
     ) -> dict:
-        """
-        Notifica a contadores cuando un RESPONSABLE aprueba manualmente una factura.
-
-        Este método se llama desde WorkflowAutomaticoService.aprobar_manual()
-
-        Args:
-            factura: Factura aprobada manualmente
-            aprobada_por: Nombre del usuario que aprobó
-            observaciones: Observaciones de la aprobación
-
-        Returns:
-            Dict con resultado
-        """
+        """Notifica contadores cuando un responsable aprueba manualmente una factura."""
         try:
             contadores = self._get_contadores_activos()
 
@@ -268,7 +202,7 @@ class AccountingNotificationService:
 
                     self.email_service.send_email(
                         to_email=contador.email,
-                        subject=f"✅ Factura {numero_factura} aprobada - Lista para procesar",
+                        subject=f"Factura {numero_factura} aprobada - Lista para procesar",
                         body_html=html_content
                     )
 
@@ -305,23 +239,7 @@ class AccountingNotificationService:
         motivo: str,
         detalle: Optional[str] = None
     ) -> dict:
-        """
-        Notifica a contadores cuando un RESPONSABLE rechaza una factura.
-
-        Importante: El contador necesita saber que una factura fue rechazada
-        para que NO la espere en el flujo de pago.
-
-        Este método se llama desde WorkflowAutomaticoService.rechazar()
-
-        Args:
-            factura: Factura rechazada
-            rechazada_por: Nombre del usuario que rechazó
-            motivo: Motivo del rechazo
-            detalle: Detalles adicionales
-
-        Returns:
-            Dict con resultado
-        """
+        """Notifica contadores cuando un responsable rechaza una factura."""
         try:
             contadores = self._get_contadores_activos()
 
@@ -374,7 +292,7 @@ class AccountingNotificationService:
 
                     self.email_service.send_email(
                         to_email=contador.email,
-                        subject=f"❌ Factura {numero_factura} rechazada - No procesar pago",
+                        subject=f" Factura {numero_factura} rechazada - No procesar pago",
                         body_html=html_content
                     )
 

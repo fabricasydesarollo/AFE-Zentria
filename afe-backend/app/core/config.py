@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     api_base_url: str = Field("http://localhost:8000", env="API_BASE_URL")
 
     # ============================================================================
-    # AUTO-CREACIÓN DE PROVEEDORES (NUEVO 2025-11-06)
+    # AUTO-CREACIÓN DE PROVEEDORES
     # ============================================================================
     # Configuración para auto-crear proveedores desde facturas
     # Cuando llega una factura con NIT que no tiene proveedor:

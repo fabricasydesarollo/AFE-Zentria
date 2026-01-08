@@ -31,4 +31,4 @@ Para documentación completa del sistema, ver: [`../afe-backend/docs/`](../../af
 
 1. **Setup**: Ver README.md principal en la raíz del frontend
 2. **Backend**: Revisar documentación en `../afe-backend/docs/`
-3. **Cambios Recientes**: Consultar documentos en [`2025-12/`](2025-12/)
+3. **Cambios Recientes**: Consultar documentos

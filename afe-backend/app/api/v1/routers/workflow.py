@@ -1,13 +1,4 @@
-"""
-Router API para Workflow de Aprobación Automática de Facturas.
-
-Endpoints para:
-- Procesar facturas nuevas
-- Aprobar/Rechazar facturas
-- Consultar estado de workflow
-- Dashboard de seguimiento
-- Gestión de asignaciones NIT-Usuario
-"""
+"""Router API para Workflow de Aprobación Automática de Facturas."""
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -26,12 +17,13 @@ from app.models.workflow_aprobacion import (
 )
 from app.models.factura import Factura, EstadoFactura
 from app.schemas.factura import AprobacionRequest, RechazoRequest
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/workflow", tags=["Workflow Aprobación"])
 
-
-# ==================== SCHEMAS ====================
 
 class ProcesarFacturaRequest(BaseModel):
     factura_id: int
@@ -49,24 +41,12 @@ class AsignacionNitRequest(BaseModel):
     emails_notificacion: Optional[List[str]] = None
 
 
-# ==================== ENDPOINTS DE WORKFLOW ====================
-
 @router.post("/procesar-factura")
 def procesar_factura_nueva(
     request: ProcesarFacturaRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Procesa una factura recién ingresada al sistema.
-
-    **Flujo automático:**
-    1. Identifica NIT del proveedor
-    2. Asigna al usuario correspondiente
-    3. Compara con factura del mes anterior
-    4. Aprueba automáticamente si es idéntica
-    5. Envía a revisión manual si hay diferencias
-    6. Genera notificaciones
-    """
+    """Procesa una factura recién ingresada al sistema."""
     servicio = WorkflowAutomaticoService(db)
     resultado = servicio.procesar_factura_nueva(request.factura_id)
 
@@ -84,9 +64,7 @@ def procesar_facturas_pendientes(
     limite: int = Query(default=50, description="Máximo de facturas a procesar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Procesa en lote todas las facturas que aún no tienen workflow asignado.
-    """
+    """Procesa en lote todas las facturas que aún no tienen workflow asignado."""
     from app.models.factura import Factura
 
     # Obtener facturas sin workflow
@@ -131,11 +109,7 @@ def aprobar_factura_manual(
     request: AprobacionRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Aprueba manualmente una factura.
-
-    Usar cuando la factura está en estado PENDIENTE_REVISION.
-    """
+    """Aprueba manualmente una factura."""
     servicio = WorkflowAutomaticoService(db)
     resultado = servicio.aprobar_manual(
         workflow_id=workflow_id,
@@ -158,9 +132,7 @@ def rechazar_factura(
     request: RechazoRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Rechaza una factura.
-    """
+    """Rechaza una factura."""
     servicio = WorkflowAutomaticoService(db)
     resultado = servicio.rechazar(
         workflow_id=workflow_id,
@@ -184,12 +156,7 @@ def aprobar_por_factura_id(
     request: AprobacionRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Aprueba una factura usando su factura_id.
-
-    Este endpoint es útil cuando se trabaja directamente con facturas
-    que aún no tienen workflow creado. Si no existe workflow, lo crea automáticamente.
-    """
+    """Aprueba una factura usando su factura_id."""
     from app.models.factura import Factura
 
     # Verificar que la factura existe
@@ -250,12 +217,7 @@ def rechazar_por_factura_id(
     request: RechazoRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Rechaza una factura usando su factura_id.
-
-    Este endpoint es útil cuando se trabaja directamente con facturas
-    que aún no tienen workflow creado. Si no existe workflow, lo crea automáticamente.
-    """
+    """Rechaza una factura usando su factura_id."""
     from app.models.factura import Factura
 
     # Verificar que la factura existe
@@ -316,9 +278,7 @@ def consultar_workflow(
     workflow_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    Consulta el estado de un workflow específico.
-    """
+    """Consulta el estado de un workflow específico."""
     workflow = db.query(WorkflowAprobacionFactura).filter(
         WorkflowAprobacionFactura.id == workflow_id
     ).first()
@@ -370,9 +330,7 @@ def listar_workflows(
     nit_proveedor: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """
-    Lista workflows con filtros opcionales.
-    """
+    """Lista workflows con filtros opcionales."""
     query = db.query(WorkflowAprobacionFactura)
 
     if estado:
@@ -414,47 +372,25 @@ def listar_workflows(
     ]
 
 
-# ==================== DASHBOARD Y ESTADÍSTICAS ====================
-
 @router.get("/dashboard")
 def obtener_dashboard_workflow(
     responsable_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_usuario)
 ):
-    """
-    Dashboard de seguimiento del workflow de facturas.
-
-    Métricas:
-    - Total facturas por estado
-    - Facturas aprobadas automáticamente vs manualmente
-    - Facturas pendientes de revisión
-    - Tiempo promedio de aprobación
-    - Facturas rechazadas
-
-    ENTERPRISE: Soporte para múltiples usuarios por NIT.
-    - Si es RESPONSABLE: Automáticamente filtra por sus NITs asignados
-    - Si es ADMIN sin responsable_id: Muestra TODAS las facturas
-    - Si es ADMIN con responsable_id: Filtra por ese responsable
-    """
+    """Dashboard de seguimiento del workflow de facturas."""
     from sqlalchemy import func
     from app.crud.factura import _obtener_proveedor_ids_de_responsable
 
-    # ENTERPRISE: Detectar automáticamente si es responsable
-    # Si el usuario tiene rol 'responsable', filtrar automáticamente por sus NITs
     if hasattr(current_user, 'role') and current_user.role.nombre == 'responsable':
         responsable_id = current_user.id
 
-    # ENTERPRISE: Usar tabla Factura en lugar de WorkflowAprobacionFactura
-    # para soporte de múltiples usuarios por NIT
     query = db.query(Factura)
 
     if responsable_id:
-        # Obtener proveedores asignados al usuario (con normalización de NITs)
         proveedor_ids = _obtener_proveedor_ids_de_responsable(db, responsable_id)
 
         if not proveedor_ids:
-            # Sin proveedores asignados, retornar estadísticas vacías
             return {
                 "total_pendientes": 0,
                 "total_en_revision": 0,
@@ -472,16 +408,13 @@ def obtener_dashboard_workflow(
                 "tiempo_promedio_aprobacion_segundos": 0,
             }
 
-        # Filtrar por proveedores asignados
         query = query.filter(Factura.proveedor_id.in_(proveedor_ids))
 
-    # Contar por estado (usando tabla Factura)
     facturas_por_estado = {}
     for estado in EstadoFactura:
         count = query.filter(Factura.estado == estado).count()
         facturas_por_estado[estado.value] = count
 
-    # Estadísticas de aprobación
     total_aprobadas_auto = query.filter(
         Factura.estado == EstadoFactura.aprobada_auto
     ).count()
@@ -494,21 +427,16 @@ def obtener_dashboard_workflow(
         Factura.estado == EstadoFactura.rechazada
     ).count()
 
-    # NOTA: "pendiente" fue eliminado en refactorización reciente
     total_pendientes = 0
 
     total_en_revision = query.filter(
         Factura.estado == EstadoFactura.en_revision
     ).count()
 
-    # Total de aprobadas (manual + auto)
     total_aprobadas = total_aprobadas_auto + total_aprobadas_manual
 
-    # Tiempo promedio de aprobación (no disponible en tabla Factura)
-    # Mantener en 0 por ahora
     tiempo_promedio = 0
 
-    # Facturas en revisión hace más de 3 días
     from datetime import datetime, timedelta
     fecha_limite = datetime.now() - timedelta(days=3)
 
@@ -517,14 +445,12 @@ def obtener_dashboard_workflow(
         Factura.fecha_emision <= fecha_limite
     ).count()
 
-    # Calcular tasa de aprobación automática
     total_facturas = total_aprobadas + total_rechazadas + total_en_revision
     tasa_aprobacion_automatica = (
         (total_aprobadas_auto / total_facturas * 100) if total_facturas > 0 else 0
     )
 
     return {
-        # Campos compatibles con el frontend
         "total_pendientes": total_pendientes,
         "total_en_revision": total_en_revision,
         "total_aprobadas": total_aprobadas,
@@ -533,8 +459,6 @@ def obtener_dashboard_workflow(
         "pendientes_antiguas": pendientes_antiguas,
         "tiempo_promedio_aprobacion_horas": round(tiempo_promedio / 3600, 2) if tiempo_promedio else 0,
         "tasa_aprobacion_automatica": round(tasa_aprobacion_automatica, 2),
-
-        # Campos adicionales para compatibilidad legacy
         "facturas_por_estado": facturas_por_estado,
         "total_aprobadas_automaticamente": total_aprobadas_auto,
         "total_aprobadas_manualmente": total_aprobadas_manual,
@@ -544,19 +468,12 @@ def obtener_dashboard_workflow(
     }
 
 
-# ==================== ASIGNACIONES NIT-RESPONSABLE ====================
-
 @router.post("/asignaciones")
 def crear_asignacion_nit(
     asignacion: AsignacionNitRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Crea una asignación de NIT a Usuario.
-
-    Configura qué responsable debe aprobar las facturas de un proveedor específico.
-    """
-    # Verificar si ya existe
+    """Crea una asignación de NIT a Usuario."""
     existente = db.query(AsignacionNitResponsable).filter(
         AsignacionNitResponsable.nit == asignacion.nit
     ).first()
@@ -572,7 +489,6 @@ def crear_asignacion_nit(
 
     nueva_asignacion = AsignacionNitResponsable(
         nit=asignacion.nit,
-        # nombre_proveedor eliminado
         responsable_id=asignacion.responsable_id,
         area=asignacion.area,
         permitir_aprobacion_automatica=asignacion.permitir_aprobacion_automatica,
@@ -603,9 +519,7 @@ def listar_asignaciones(
     activo: Optional[bool] = True,
     db: Session = Depends(get_db)
 ):
-    """
-    Lista todas las asignaciones NIT-Usuario.
-    """
+    """Lista todas las asignaciones NIT-Usuario."""
     query = db.query(AsignacionNitResponsable)
 
     if activo is not None:
@@ -637,9 +551,7 @@ def actualizar_asignacion(
     asignacion: AsignacionNitRequest,
     db: Session = Depends(get_db)
 ):
-    """
-    Actualiza una asignación NIT-Usuario.
-    """
+    """Actualiza una asignación NIT-Usuario."""
     asignacion_db = db.query(AsignacionNitResponsable).filter(
         AsignacionNitResponsable.id == asignacion_id
     ).first()
@@ -655,7 +567,6 @@ def actualizar_asignacion(
 
     asignacion_db.responsable_id = asignacion.responsable_id
     asignacion_db.area = asignacion.area
-    # nombre_proveedor eliminado
     asignacion_db.permitir_aprobacion_automatica = asignacion.permitir_aprobacion_automatica
     asignacion_db.requiere_revision_siempre = asignacion.requiere_revision_siempre
     asignacion_db.monto_maximo_auto_aprobacion = Decimal(str(asignacion.monto_maximo_auto_aprobacion)) if asignacion.monto_maximo_auto_aprobacion else None
@@ -668,16 +579,12 @@ def actualizar_asignacion(
     return {"mensaje": "Asignación actualizada exitosamente"}
 
 
-# ==================== NOTIFICACIONES ====================
-
 @router.post("/notificaciones/enviar-pendientes")
 def enviar_notificaciones_pendientes(
     limite: int = Query(default=50, description="Máximo de notificaciones a enviar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Envía las notificaciones pendientes en cola.
-    """
+    """Envía las notificaciones pendientes en cola."""
     servicio = NotificacionService(db)
     resultado = servicio.enviar_notificaciones_pendientes(limite)
 
@@ -689,16 +596,12 @@ def enviar_recordatorios(
     dias_pendiente: int = Query(default=3, description="Días que debe estar pendiente"),
     db: Session = Depends(get_db)
 ):
-    """
-    Envía recordatorios para facturas pendientes de revisión hace más de X días.
-    """
+    """Envía recordatorios para facturas pendientes de revisión hace más de X días."""
     servicio = NotificacionService(db)
     resultado = servicio.enviar_recordatorios_facturas_pendientes(dias_pendiente)
 
     return resultado
 
-
-# ==================== ENDPOINTS ADICIONALES ÚTILES ====================
 
 @router.get("/mis-facturas-pendientes")
 def obtener_mis_facturas_pendientes(
@@ -706,11 +609,7 @@ def obtener_mis_facturas_pendientes(
     limite: int = Query(default=50, description="Límite de resultados"),
     db: Session = Depends(get_db)
 ):
-    """
-    Obtiene todas las facturas pendientes de aprobación de un usuario específico.
-
-    Retorna workflows en estados: PENDIENTE_REVISION, EN_ANALISIS, REQUIERE_APROBACION_MANUAL
-    """
+    """Obtiene todas las facturas pendientes de aprobación de un usuario específico."""
     from app.models.factura import Factura
     from app.models.usuario import Usuario
     from sqlalchemy.orm import joinedload
@@ -733,7 +632,6 @@ def obtener_mis_facturas_pendientes(
         factura = wf.factura
         proveedor_nombre = factura.proveedor.razon_social if factura.proveedor else "Sin proveedor"
 
-        # 🔥 Obtener nombre del usuario asignado
         nombre_responsable = None
         if factura.usuario:
             nombre_responsable = factura.usuario.nombre
@@ -751,7 +649,6 @@ def obtener_mis_facturas_pendientes(
             "porcentaje_similitud": float(wf.porcentaje_similitud) if wf.porcentaje_similitud else None,
             "fecha_asignacion": str(wf.fecha_asignacion) if wf.fecha_asignacion else None,
             "dias_pendiente": (wf.fecha_asignacion.date() - wf.creado_en.date()).days if wf.fecha_asignacion and wf.creado_en else 0,
-            # Campo de auditoría para ADMIN
             "nombre_responsable": nombre_responsable
         })
 
@@ -767,11 +664,7 @@ def obtener_factura_con_workflow(
     factura_id: int,
     db: Session = Depends(get_db)
 ):
-    """
-    Obtiene el detalle completo de una factura incluyendo su workflow y comparación.
-
-    Útil para mostrar toda la información en un dashboard o modal de aprobación.
-    """
+    """Obtiene el detalle completo de una factura incluyendo su workflow y comparación."""
     from app.models.factura import Factura
     from app.services.analisis_patrones import AnalizadorPatrones
 
@@ -791,7 +684,6 @@ def obtener_factura_con_workflow(
             "area": factura.proveedor.area
         }
 
-    # Calcular año/mes desde fecha_emision
     año = factura.fecha_emision.year if factura.fecha_emision else None
     mes = factura.fecha_emision.month if factura.fecha_emision else None
 
@@ -846,7 +738,6 @@ def obtener_factura_con_workflow(
             } if factura_anterior else None
         }
 
-    # NUEVO: Análisis de patrones históricos
     contexto_historico = None
     try:
         if factura.concepto_normalizado and factura.proveedor_id:
@@ -879,9 +770,7 @@ def obtener_factura_con_workflow(
                     "contexto_adicional": recomendacion["contexto"]
                 }
     except Exception as e:
-        # Si falla el análisis de patrones, simplemente no incluir contexto histórico
-        # La factura detalle se retorna normalmente sin esta información adicional
-        print(f"Warning: Error en análisis de patrones para factura {factura_id}: {str(e)}")
+        logger.warning(f"Error en análisis de patrones para factura {factura_id}: {str(e)}")
         contexto_historico = None
 
     return {
@@ -898,11 +787,7 @@ def analizar_patron_proveedor(
     concepto: str = Query(..., description="Concepto normalizado a analizar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Analiza el patrón histórico de pagos para un proveedor y concepto específico.
-
-    Genera estadísticas y clasificación (Tipo A, B, C) basado en los últimos 12 meses.
-    """
+    """Analiza el patrón histórico de pagos para un proveedor y concepto específico."""
     from app.services.analisis_patrones import AnalizadorPatrones
 
     analizador = AnalizadorPatrones(db)
@@ -948,14 +833,7 @@ def regenerar_todos_patrones(
     limit: Optional[int] = Query(None, description="Límite de combinaciones a procesar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Regenera todos los patrones históricos del sistema.
-
-    Útil para:
-    - Inicialización del sistema
-    - Recalibración después de cambios en algoritmo
-    - Actualización masiva de patrones
-    """
+    """Regenera todos los patrones históricos del sistema."""
     from app.services.analisis_patrones import AnalizadorPatrones
 
     analizador = AnalizadorPatrones(db)
@@ -963,7 +841,6 @@ def regenerar_todos_patrones(
     try:
         analizador.regenerar_todos_patrones(limit=limit)
 
-        # Contar patrones generados
         from app.models.patrones_facturas import PatronesFacturas, TipoPatron
 
         total = db.query(PatronesFacturas).count()
@@ -994,38 +871,13 @@ def regenerar_todos_patrones(
         )
 
 
-# ==================== ENDPOINT ENTERPRISE: COMPARACIÓN DE ITEMS ====================
-
 @router.post("/comparar-factura-items/{factura_id}")
 def comparar_factura_items(
     factura_id: int,
     meses_historico: int = Query(default=12, description="Meses de historial a analizar"),
     db: Session = Depends(get_db)
 ):
-    """
-    🔬 **ENDPOINT ENTERPRISE: Comparación Granular Item por Item**
-
-    Analiza una factura comparando cada item contra su historial mensual.
-
-    **Funcionalidad:**
-    - Compara item por item vs histórico del proveedor
-    - Detecta variaciones de precio unitario (umbrales: 15% moderado, 30% alto)
-    - Detecta variaciones de cantidad (umbrales: 20% moderado, 50% alto)
-    - Identifica items nuevos sin historial
-    - Genera alertas con severidad (baja/media/alta)
-    - Calcula confianza para aprobación automática (0-100%)
-
-    **Retorna:**
-    - Análisis detallado de cada item
-    - Alertas organizadas por severidad
-    - Recomendación de aprobación (aprobar_auto / en_revision)
-    - Porcentaje de confianza
-
-    **Uso:**
-    - Verificación manual antes de aprobar factura
-    - Auditoría de facturas ya procesadas
-    - Análisis de proveedores con cambios frecuentes
-    """
+    """Analiza una factura comparando cada item contra su historial mensual."""
     from app.services.comparador_items import ComparadorItemsService
     from datetime import datetime
 
@@ -1062,25 +914,12 @@ def obtener_estadisticas_comparacion(
     fecha_hasta: Optional[str] = Query(None, description="Fecha fin (YYYY-MM-DD)"),
     db: Session = Depends(get_db)
 ):
-    """
-    **Estadísticas del Sistema de Comparación de Items**
-
-    Retorna métricas globales del sistema de comparación automática.
-
-    **Métricas:**
-    - Total de facturas analizadas
-    - Tasa de aprobación automática
-    - Alertas más comunes
-    - Proveedores con más variaciones
-    - Tendencias de precios
-    """
+    """Retorna métricas globales del sistema de comparación automática."""
     from datetime import datetime as dt
 
-    # Parsear fechas
     fecha_desde_dt = dt.fromisoformat(fecha_desde) if fecha_desde else dt(2024, 1, 1)
     fecha_hasta_dt = dt.fromisoformat(fecha_hasta) if fecha_hasta else dt.now()
 
-    # Consultar workflows en el rango
     workflows = db.query(WorkflowAprobacionFactura).filter(
         WorkflowAprobacionFactura.creado_en >= fecha_desde_dt,
         WorkflowAprobacionFactura.creado_en <= fecha_hasta_dt
@@ -1090,16 +929,14 @@ def obtener_estadisticas_comparacion(
     total_aprobadas_auto = sum(1 for w in workflows if w.estado == EstadoFacturaWorkflow.APROBADA_AUTO)
     total_revision_manual = sum(1 for w in workflows if w.estado == EstadoFacturaWorkflow.PENDIENTE_REVISION)
 
-    # Calcular tasa de aprobación automática
     tasa_aprobacion_auto = (total_aprobadas_auto / total_analizadas * 100) if total_analizadas > 0 else 0
 
-    # Recopilar diferencias detectadas (diferencias_detectadas es un dict, no una lista)
     from collections import Counter
 
     workflows_con_diferencias = []
-    variaciones_altas = 0  # > 50%
-    variaciones_medias = 0  # 5-50%
-    variaciones_bajas = 0   # <= 5%
+    variaciones_altas = 0
+    variaciones_medias = 0
+    variaciones_bajas = 0
 
     for w in workflows:
         if w.diferencias_detectadas and isinstance(w.diferencias_detectadas, dict):

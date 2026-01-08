@@ -4,9 +4,7 @@ CRUD operations para AsignacionNitResponsable.
 
 Centraliza la lógica de mapeo NIT → Grupo para evitar duplicación de código.
 
-Nivel: Enterprise Fortune 500
-Autor:  Backend Development Team
-Fecha: 2025-12-18
+
 """
 
 from sqlalchemy.orm import Session

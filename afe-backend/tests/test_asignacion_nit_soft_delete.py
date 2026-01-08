@@ -1,5 +1,5 @@
 """
-ENTERPRISE-GRADE TESTS: Sistema de Asignaciones NIT con Soft Delete
+Sistema de Asignaciones NIT con Soft Delete
 
 Tests de integración completos para verificar el comportamiento correcto
 del patrón soft delete en asignaciones NIT-Usuario.
@@ -13,9 +13,7 @@ Cubre:
 - Bulk operations con reactivación
 - Conflict detection
 
-Nivel: Enterprise Production-Ready Test Suite
-Autor: Equipo de Desarrollo 
-Fecha: 2025-10-21
+
 """
 import pytest
 from fastapi.testclient import TestClient

@@ -9,6 +9,9 @@ import requests
 
 from pydantic import BaseModel, field_validator, Field
 from pydantic_settings import BaseSettings
+from src.utils.logger import get_logger
+
+logger = get_logger("Config")
 
 
 class UserConfig(BaseModel):
@@ -107,7 +110,7 @@ def fetch_config_from_api(api_url: str, timeout: int = 10) -> List[dict]:
         data = response.json()
         return data.get("users", [])
     except requests.RequestException as e:
-        print(f"Error obteniendo configuración desde API: {e}")
+        logger.error(f"Error obteniendo configuración desde API: {e}")
         raise
 
 
@@ -130,12 +133,12 @@ def load_config(settings_path: Optional[Path] = None, use_api: bool = True) -> S
         api_endpoint = f"{api_base_url}/api/v1/email-config/configuracion-extractor-public"
 
         try:
-            print(f"Obteniendo configuración desde API: {api_endpoint}")
+            logger.info(f"Obteniendo configuración desde API: {api_endpoint}")
             users_data = fetch_config_from_api(api_endpoint)
-            print(f"Configuración obtenida desde API: {len(users_data)} cuentas")
+            logger.info(f"Configuración obtenida desde API: {len(users_data)} cuentas")
         except Exception as e:
-            print(f"No se pudo obtener configuración desde API: {e}")
-            print("Intentando fallback a settings.json...")
+            logger.warning(f"No se pudo obtener configuración desde API: {e}")
+            logger.info("Intentando fallback a settings.json...")
             use_api = False
 
     # Fallback a settings.json si API falla o use_api=False
@@ -153,13 +156,13 @@ def load_config(settings_path: Optional[Path] = None, use_api: bool = True) -> S
                 settings_path = root_settings  # fallback para logs
 
         if settings_path.exists():
-            print(f"Cargando configuración desde: {settings_path}")
+            logger.info(f"Cargando configuración desde: {settings_path}")
             with open(settings_path, "r", encoding="utf-8") as fh:
                 file_settings = json.load(fh)
                 users_data = file_settings.get("users", [])
-            print(f"Configuración obtenida desde archivo: {len(users_data)} cuentas")
+            logger.info(f"Configuración obtenida desde archivo: {len(users_data)} cuentas")
         else:
-            print(f"Advertencia: No se encontró {settings_path}")
+            logger.warning(f"Advertencia: No se encontró {settings_path}")
 
     env_settings = Settings()
     config_dict = env_settings.model_dump()

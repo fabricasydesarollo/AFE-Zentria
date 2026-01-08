@@ -5,3 +5,4 @@
 export * from './useDashboardData';
 export * from './useFacturaDialog';
 export * from './useDashboardStats';
+export * from './useCuarentenaData';

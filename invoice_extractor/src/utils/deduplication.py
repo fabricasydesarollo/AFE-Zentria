@@ -5,6 +5,10 @@ import json
 from decimal import Decimal
 from typing import Dict, Any, Iterable, List
 
+from src.utils.logger import get_logger
+
+logger = get_logger("Deduplication")
+
 
 def _normalize_value(v):
     if v is None:
@@ -63,7 +67,7 @@ def deduplicate_facturas(facturas: Iterable[Dict[str, Any]]) -> List[Dict[str, A
             seen_cufe.add(key)
         out.append(f)
     if conflictos:
-        print(f"[deduplication] Facturas duplicadas detectadas: {len(conflictos)}. Solo se guarda la primera ocurrencia por CUFE o número.")
+        logger.info(f"Facturas duplicadas detectadas: {len(conflictos)}. Solo se guarda la primera ocurrencia por CUFE o número.")
     return out
 
 

@@ -45,6 +45,25 @@ class EstadisticasMesActual(BaseModel):
     aprobadas: int = Field(description="Facturas aprobadas (requieren acción contador)")
     aprobadas_auto: int = Field(description="Facturas aprobadas automáticamente (requieren acción contador)")
     rechazadas: int = Field(description="Facturas rechazadas (inactivas)")
+    en_cuarentena: int = Field(default=0, description="Facturas en cuarentena (grupo sin responsables)")
+
+
+class CuarentenaGrupo(BaseModel):
+    """Información de un grupo con facturas en cuarentena"""
+    grupo_id: int
+    nombre_grupo: str
+    codigo_grupo: str
+    total_facturas: int
+    impacto_financiero: float
+    url_asignar_responsables: str
+
+
+class CuarentenaResumen(BaseModel):
+    """Resumen de cuarentena para dashboard"""
+    total_facturas: int = Field(description="Total de facturas en cuarentena")
+    total_grupos_afectados: int = Field(description="Total de grupos con facturas en cuarentena")
+    impacto_financiero_total: float = Field(description="Suma total de facturas en cuarentena")
+    grupos: List[CuarentenaGrupo] = Field(default_factory=list, description="Detalle por grupo")
 
 
 class DashboardMesActualResponse(BaseModel):
@@ -55,6 +74,7 @@ class DashboardMesActualResponse(BaseModel):
     estadisticas: EstadisticasMesActual
     facturas: List[FacturaRead]
     total_facturas: int = Field(description="Total de facturas retornadas")
+    cuarentena: Optional[CuarentenaResumen] = Field(None, description="Información de cuarentena (solo para admin/superadmin)")
 
 
 class AlertaMesResponse(BaseModel):
@@ -274,11 +294,55 @@ def get_dashboard_mes_actual(
         aprobadas_auto = sum(1 for f in facturas if f.estado == EstadoFactura.aprobada_auto.value)
         rechazadas = sum(1 for f in facturas if f.estado == EstadoFactura.rechazada.value)
 
+        # Contar facturas en cuarentena (del mes actual)
+        en_cuarentena_count = db.query(func.count(Factura.id)).filter(
+            extract('month', Factura.creado_en) == mes_actual,
+            extract('year', Factura.creado_en) == año_actual,
+            Factura.estado == EstadoFactura.en_cuarentena.value
+        ).scalar() or 0
+
         logger.info(
             f"Dashboard mes actual: {total} facturas "
             f"(en_revision: {en_revision}, aprobadas: {aprobadas}, "
-            f"aprobadas_auto: {aprobadas_auto}, rechazadas: {rechazadas})"
+            f"aprobadas_auto: {aprobadas_auto}, rechazadas: {rechazadas}, "
+            f"en_cuarentena: {en_cuarentena_count})"
         )
+
+        # ========================================================================
+        # CUARENTENA: Solo para Super Admin y Admin
+        # ========================================================================
+        cuarentena_info = None
+        if hasattr(current_user, 'role') and current_user.role.nombre.lower() in ['superadmin', 'admin']:
+            try:
+                from app.services.cuarentena_service import CuarentenaService
+                cuarentena_service = CuarentenaService(db)
+                resumen_cuarentena = cuarentena_service.obtener_resumen_cuarentena()
+
+                # Transformar formato del servicio a formato del dashboard
+                grupos_cuarentena = []
+                if resumen_cuarentena.get('problemas'):
+                    for problema in resumen_cuarentena['problemas']:
+                        for subproblema in problema.get('subproblemas', []):
+                            grupos_cuarentena.append(CuarentenaGrupo(
+                                grupo_id=subproblema['grupo_id'],
+                                nombre_grupo=subproblema['nombre_grupo'],
+                                codigo_grupo=subproblema['codigo_grupo'],
+                                total_facturas=subproblema['total_facturas'],
+                                impacto_financiero=float(subproblema['impacto_financiero']),
+                                url_asignar_responsables=subproblema['accion_dirigida']['url']
+                            ))
+
+                cuarentena_info = CuarentenaResumen(
+                    total_facturas=resumen_cuarentena.get('total', 0),
+                    total_grupos_afectados=len(grupos_cuarentena),
+                    impacto_financiero_total=float(resumen_cuarentena.get('impacto_financiero', 0)),
+                    grupos=grupos_cuarentena
+                )
+
+                logger.info(f"Cuarentena incluida en dashboard: {cuarentena_info.total_facturas} facturas en cuarentena")
+            except Exception as e:
+                logger.warning(f"Error obteniendo información de cuarentena para dashboard: {str(e)}")
+                # No fallar el dashboard si hay error en cuarentena
 
         return DashboardMesActualResponse(
             mes=mes_actual,
@@ -289,10 +353,12 @@ def get_dashboard_mes_actual(
                 en_revision=en_revision,
                 aprobadas=aprobadas,
                 aprobadas_auto=aprobadas_auto,
-                rechazadas=rechazadas
+                rechazadas=rechazadas,
+                en_cuarentena=en_cuarentena_count
             ),
             facturas=[FacturaRead.model_validate(f) for f in facturas],
-            total_facturas=total
+            total_facturas=total,
+            cuarentena=cuarentena_info
         )
 
     except Exception as e:
@@ -391,15 +457,15 @@ def get_alerta_mes(
         if dias_restantes <= 1:
             nivel_urgencia = "critical"
             if dias_restantes == 0:
-                mensaje = f"🚨 Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra HOY."
+                mensaje = f" Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra HOY."
             else:
-                mensaje = f"🚨 Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra MAÑANA."
+                mensaje = f" Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra MAÑANA."
         elif dias_restantes <= 3:
             nivel_urgencia = "warning"
-            mensaje = f"⚠️ Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra en {dias_restantes} días."
+            mensaje = f"Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra en {dias_restantes} días."
         else:
             nivel_urgencia = "info"
-            mensaje = f"⚠️ Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra en {dias_restantes} días."
+            mensaje = f"Tienes {facturas_pendientes} factura(s) pendiente(s). El mes cierra en {dias_restantes} días."
 
         logger.info(
             f"Alerta mes: mostrar={mostrar_alerta}, días={dias_restantes}, "

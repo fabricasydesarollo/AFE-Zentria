@@ -12,7 +12,7 @@ Cambios:
 - ambos campos son NULLABLE y con índice para queries rápidas
 
 Fecha: 2025-11-06
-Arquitecto: 
+: 
 Nivel: Enterprise
 Reversión: Supported (DOWN migration implementada)
 """

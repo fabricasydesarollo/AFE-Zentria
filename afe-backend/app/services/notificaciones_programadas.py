@@ -8,7 +8,6 @@ Sistema profesional de notificaciones que sigue mejores prácticas:
 - Alertas críticas para facturas urgentes (> 10 días)
 - No spam, balanceado y efectivo
 
-Arquitectura: Similar a SAP Concur, Oracle Financials, Workday
 """
 
 import logging
@@ -422,9 +421,7 @@ class NotificacionesProgramadasService:
         return html
 
 
-# ============================================================================
 # FUNCIONES DE CONVENIENCIA
-# ============================================================================
 
 def notificar_nueva_factura_asignada(db: Session, factura_id: int) -> Dict[str, Any]:
     """

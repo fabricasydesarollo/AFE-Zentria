@@ -21,7 +21,9 @@ from app.core.security import (
 from app.models.usuario import Usuario
 from app.schemas.auth import LoginRequest, TokenResponse, UsuarioResponse
 from app.services.microsoft_oauth_service import microsoft_oauth_service
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -37,7 +39,7 @@ def logout():
     - Limpiar sesiones activas
     - Revocar refresh tokens
     """
-    print(f" Usuario cerrando sesión")
+    logger.info("Usuario cerrando sesión")
     return {
         "message": "Sesión cerrada correctamente",
         "status": "success"
@@ -51,7 +53,7 @@ def get_microsoft_logout_url():
     El frontend debe redirigir a esta URL para cerrar la sesión en Microsoft.
     """
     logout_url = microsoft_oauth_service.get_logout_url()
-    print(f" Logout URL de Microsoft solicitada: {logout_url}")
+    logger.info(f"Logout URL de Microsoft solicitada: {logout_url}")
     return {
         "logout_url": logout_url,
         "message": "Redirige a esta URL para cerrar la sesión en Microsoft"
@@ -64,14 +66,14 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
     Endpoint de login tradicional con usuario y contraseña.
     Retorna JWT token y datos del usuario.
     """
-    print(f" Login attempt for user: {credentials.usuario}")
+    logger.info(f"Login attempt for user: {credentials.usuario}")
 
     # Buscar usuario en tabla usuarios
     usuario = db.query(Usuario).filter(Usuario.usuario == credentials.usuario).first()
 
-    print(f"   Usuario encontrado: {usuario is not None}")
+    logger.debug(f"Usuario encontrado: {usuario is not None}")
     if usuario:
-        print(f"   Usuario ID: {usuario.id}, Activo: {usuario.activo}")
+        logger.debug(f"Usuario ID: {usuario.id}, Activo: {usuario.activo}")
 
         # Validar que el usuario use autenticación local
         if usuario.auth_provider != "local":
@@ -87,10 +89,10 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             )
 
         password_valid = verify_password(credentials.password, usuario.hashed_password)
-        print(f"   Contraseña válida: {password_valid}")
+        logger.debug(f"Contraseña válida: {password_valid}")
 
     if not usuario or not verify_password(credentials.password, usuario.hashed_password):
-        print("    Login failed")
+        logger.warning(f"Login failed for user: {credentials.usuario}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos"
@@ -211,7 +213,7 @@ def microsoft_callback(
     # if not state_valido:
     #     raise HTTPException(status_code=400, detail="State inválido (CSRF)")
 
-    print(f" Microsoft OAuth callback - código recibido")
+    logger.info("Microsoft OAuth callback - código recibido")
 
     try:
         # Intercambiar código por token
@@ -226,7 +228,7 @@ def microsoft_callback(
 
         # Obtener información del usuario
         user_info = microsoft_oauth_service.get_user_info(access_token)
-        print(f"   Usuario Microsoft: {user_info.get('email')}")
+        logger.info(f"Usuario Microsoft: {user_info.get('email')}")
 
         # Buscar o crear usuario
         usuario = microsoft_oauth_service.find_or_create_user(db, user_info)
@@ -291,7 +293,7 @@ def microsoft_callback(
             extra_claims={"id": usuario.id}
         )
 
-        print(f"    Login exitoso - Usuario ID: {usuario.id}")
+        logger.info(f"Login exitoso - Usuario ID: {usuario.id}")
 
         return TokenResponse(
             access_token=jwt_token,
@@ -311,7 +313,7 @@ def microsoft_callback(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"   ❌ Error en callback de Microsoft: {str(e)}")
+        logger.error(f"Error en callback de Microsoft: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error procesando autenticación: {str(e)}"
